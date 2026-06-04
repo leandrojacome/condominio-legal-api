@@ -65,7 +65,13 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Granularidade, política de conflito e modo de aprovação **configuráveis por área** (`dia_inteiro`/`turno`/`horario`; `exclusiva`/`capacidade`; `automatica`/`requer_aprovacao`).
   - Regras: bloquear inadimplente, antecedência mín/máx, limite por unidade, taxa de uso (gera cobrança no Financeiro) e regras de cancelamento.
   - Capacidade **`reservas-areas-comuns` CONSOLIDADA** em `specs/reservas-areas-comuns/spec.md` (7 requisitos, `validate --strict` ok).
-- **Rodada 6 (Assembleias/Votação)** — aberta na thread (próxima capacidade da sequência aprovada).
+- **Rodada 6 (Assembleias/Votação)** — respondida pelo board em 2026-06-04. Decisões:
+  - Modalidade **híbrida** (presencial + votação online).
+  - Critério de voto **configurável por pauta** (`por_unidade` ou `por_fracao`).
+  - Regras: quórum mínimo, bloquear inadimplente, procuração, voto secreto opcional por pauta, múltiplas pautas.
+  - Saídas: apuração automática, ata oficial, notificação do resultado (→ Comunicação), histórico auditável.
+  - Capacidade **`assembleias-votacoes` CONSOLIDADA** em `specs/assembleias-votacoes/spec.md` (6 requisitos, `validate --strict` ok).
+- **Rodada 7 (Ocorrências/Chamados)** — aberta na thread (última capacidade núcleo da sequência aprovada).
 
 ## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
 
