@@ -41,4 +41,11 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
 ## Brainstorm log
 
 - **Rodada 1 (escopo)** — respondida pelo board em 2026-06-04. Decisões acima.
-- **Rodada 2 (Cadastros)** — aberta na thread; detalha tipos de unidade, identificação, vínculos pessoa↔unidade e dados obrigatórios. Respostas serão convertidas em requisitos no spec delta `specs/cadastro/spec.md`.
+- **Rodada 2 (Cadastros)** — respondida pelo board em 2026-06-04. Decisões:
+  - Tipos de unidade: `apartamento`, `casa`, `comercial`, `garagem`, `deposito`.
+  - Identificação única da unidade: **bloco/torre + número** (único no condomínio).
+  - Vínculos pessoa↔unidade: `proprietario`, `inquilino`, `morador`, `responsavel_financeiro`, `imobiliaria`.
+  - Uma pessoa pode estar vinculada a **várias** unidades.
+  - Dados obrigatórios da pessoa: CPF, e-mail, telefone (nome assumido obrigatório como identificador — confirmar).
+  - Capacidade **`cadastro` CONSOLIDADA** em `specs/cadastro/spec.md` (5 requisitos, cenários happy/erro, `validate --strict` ok).
+- **Rodada 3 (Financeiro)** — aberta na thread; detalha cobranças/taxas, inadimplência e responsável financeiro.
