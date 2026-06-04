@@ -14,4 +14,6 @@ export const TENANT_SCOPED_MODELS = [
   "RegistroAcesso",
   "PreAutorizacao",
   "Encomenda",
+  "FluxoStatus",
+  "FluxoTransicao",
 ] as const;

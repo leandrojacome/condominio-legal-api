@@ -57,6 +57,7 @@ model User {
   emailVerified DateTime?
   image        String?
   passwordHash String?   @db.Text
+  fcmToken     String?   // Firebase Cloud Messaging device token for push notifications
 
   accounts Account[]
   sessions Session[]
@@ -74,13 +75,14 @@ model Condominio {
   criadoEm    DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  unidades    Unidade[]
-  pessoas     Pessoa[]
-  vinculos    Vinculo[]
-  areasComuns AreaComum[]
-  assembleias Assembleia[]
-  comunicados Comunicado[]
-  ocorrencias Ocorrencia[]
+  unidades     Unidade[]
+  pessoas      Pessoa[]
+  vinculos     Vinculo[]
+  areasComuns  AreaComum[]
+  assembleias  Assembleia[]
+  comunicados  Comunicado[]
+  ocorrencias  Ocorrencia[]
+  fluxoStatus  FluxoStatus[]
 }
 
 model Unidade {
@@ -485,6 +487,39 @@ model Ata {
   geradaEm    DateTime @default(now())
 
   assembleia Assembleia @relation(fields: [assembleiaId], references: [id])
+}
+
+// ─── Módulo Ocorrências ─── FluxoStatus configurável ─────────────────────────
+
+model FluxoStatus {
+  id           String   @id @default(cuid())
+  condominioId String
+  nome         String   // e.g. "aberta", "em_andamento", "resolvida"
+  descricao    String?
+  inicial      Boolean  @default(false) // status atribuído na abertura
+  terminal     Boolean  @default(false) // encerra a ocorrência (dispara avaliação/SLA)
+  ordem        Int      @default(0)     // display order
+  criadoEm    DateTime @default(now())
+
+  condominio      Condominio         @relation(fields: [condominioId], references: [id])
+  transicoesOrigem FluxoTransicao[]  @relation("Origem")
+  transicoesDestino FluxoTransicao[] @relation("Destino")
+
+  @@unique([condominioId, nome])
+  @@index([condominioId])
+}
+
+model FluxoTransicao {
+  id              String @id @default(cuid())
+  condominioId    String
+  statusOrigemId  String
+  statusDestinoId String
+
+  statusOrigem  FluxoStatus @relation("Origem", fields: [statusOrigemId], references: [id])
+  statusDestino FluxoStatus @relation("Destino", fields: [statusDestinoId], references: [id])
+
+  @@unique([condominioId, statusOrigemId, statusDestinoId])
+  @@index([condominioId])
 }
 
 // ─── Módulo Ocorrências ───────────────────────────────────────────────────────
