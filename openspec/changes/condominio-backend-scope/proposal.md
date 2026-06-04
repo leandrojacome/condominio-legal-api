@@ -46,6 +46,12 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Identificação única da unidade: **bloco/torre + número** (único no condomínio).
   - Vínculos pessoa↔unidade: `proprietario`, `inquilino`, `morador`, `responsavel_financeiro`, `imobiliaria`.
   - Uma pessoa pode estar vinculada a **várias** unidades.
-  - Dados obrigatórios da pessoa: CPF, e-mail, telefone (nome assumido obrigatório como identificador — confirmar).
+  - Dados obrigatórios da pessoa: CPF, e-mail, telefone + **nome** (campo nome obrigatório **confirmado pelo Chefe** em 2026-06-04, salvo objeção do board).
   - Capacidade **`cadastro` CONSOLIDADA** em `specs/cadastro/spec.md` (5 requisitos, cenários happy/erro, `validate --strict` ok).
 - **Rodada 3 (Financeiro)** — aberta na thread; detalha cobranças/taxas, inadimplência e responsável financeiro.
+
+## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
+
+Uma capacidade por vez: **Cadastros (✅ consolidada) → Financeiro → Comunicação/Avisos → Reservas de áreas comuns → Assembleias/Votação → Ocorrências/Chamados**. A transversal `acesso-e-perfis` (autenticação/autorização dos 6 perfis) é especificada junto às capacidades que a exigem.
+
+**Próximo gate (Chefe):** com o núcleo do backend especificado e validado, o Chefe abre o fan-out de implementação — UXDesigner (`DESIGN.md`) → Dev Backend (contrato da API) → Dev Frontend (UI) → QA (testes). Fora do escopo desta issue (somente backend/spec).
