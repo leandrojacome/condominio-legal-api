@@ -6,25 +6,29 @@ Escopo desta fase = **somente backend** (API / domínio / dados). Frontend e tes
 
 ## What Changes
 
-Esta proposta ainda está em **brainstorm aberto**. À medida que o board responde cada rodada de perguntas, transformamos as respostas em capacidades (`capabilities`), requisitos normativos (`The system SHALL …`) e cenários testáveis (GIVEN/WHEN/THEN).
+Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas pelo board e estão registradas abaixo. A partir delas, detalhamos uma capacidade por vez (deep-dive), começando por **Cadastros**.
 
-Capacidades candidatas levantadas para o backend de condomínio (a serem confirmadas/priorizadas pelo board):
-
-- `cadastro-condominio`: condomínios, unidades (apartamentos/casas), blocos/torres e seus dados.
-- `cadastro-pessoas`: moradores/condôminos, proprietários, inquilinos, dependentes e vínculo com unidades.
-- `acesso-e-perfis`: autenticação, perfis (síndico, administradora, morador, inquilino, porteiro, conselho) e autorização por perfil.
-- `financeiro`: taxas condominiais, cobranças/boletos, pagamentos, inadimplência, rateio de despesas, prestação de contas.
-- `reservas-areas-comuns`: reserva de salão de festas, churrasqueira e demais áreas, com regras e conflitos.
-- `comunicacao`: avisos/mural, notificações aos moradores.
-- `ocorrencias-manutencao`: chamados/ocorrências, manutenção, acompanhamento de status.
-- `assembleias-votacoes`: convocação de assembleias, pautas e votações.
-- `portaria-acessos`: controle de visitantes, prestadores, encomendas e registros de acesso.
-- `documentos`: armazenamento de documentos do condomínio (atas, regimento, contratos).
+### Decisões da Rodada 1 (board, 2026-06-04)
+- **Arquitetura:** **multi-condomínio (multi-tenant)** — uma instância gerencia vários condomínios com isolamento de dados por condomínio.
+- **Perfis de usuário (6):** síndico, administradora/gestor, morador proprietário, inquilino, porteiro/zelador, conselho fiscal.
+- **Módulos prioritários da 1ª versão (7):** cadastro, financeiro, reservas de áreas comuns, comunicação/avisos, ocorrências/manutenção, assembleias/votações, portaria/acessos.
+- **Fora da 1ª versão (adiado):** documentos.
+- **Primeira capacidade a detalhar a fundo:** **Cadastros**.
 
 ## Capabilities
 
 ### New Capabilities
-- A definir após a 1ª rodada de brainstorm com o board (lista candidata acima).
+- `cadastro` *(em detalhamento — Rodada 2)*: condomínios, unidades (blocos/torres) e pessoas (proprietários, inquilinos, moradores) com isolamento multi-tenant.
+- `financeiro`: taxas, cobranças/boletos, pagamentos, inadimplência, rateio, prestação de contas.
+- `reservas-areas-comuns`: reserva de áreas comuns com regras e conflitos.
+- `comunicacao`: avisos/mural e notificações.
+- `ocorrencias-manutencao`: chamados/ocorrências e acompanhamento.
+- `assembleias-votacoes`: convocação, pautas e votação.
+- `portaria-acessos`: visitantes, prestadores, encomendas e registros de acesso.
+- `acesso-e-perfis` *(transversal)*: autenticação e autorização por perfil (os 6 perfis acima).
+
+### Deferred (fora da 1ª versão)
+- `documentos`: atas, regimento, contratos e arquivos do condomínio.
 
 ### Modified Capabilities
 - Nenhuma (projeto novo, ainda sem specs em `openspec/specs/`).
@@ -32,13 +36,9 @@ Capacidades candidatas levantadas para o backend de condomínio (a serem confirm
 ## Impact
 
 - Novo projeto backend (`condominio-legal-api`). Sem código legado afetado.
-- Define a base de domínio/dados/API para todas as fases seguintes.
+- O isolamento multi-tenant e o modelo de perfis são transversais e afetam todas as capacidades.
 
-## Open Questions (1ª rodada — enviada ao board via interação na thread)
+## Brainstorm log
 
-1. Quais módulos/capacidades são prioritários para a 1ª versão do backend?
-2. O backend será multi-condomínio (SaaS multi-tenant) ou um condomínio por instância?
-3. Quais perfis de usuário o sistema precisa suportar?
-4. Por qual capacidade devemos começar o detalhamento (1ª atividade a especificar a fundo)?
-
-Decisões e respostas serão registradas aqui e convertidas em spec deltas em `specs/<capability>/spec.md`.
+- **Rodada 1 (escopo)** — respondida pelo board em 2026-06-04. Decisões acima.
+- **Rodada 2 (Cadastros)** — aberta na thread; detalha tipos de unidade, identificação, vínculos pessoa↔unidade e dados obrigatórios. Respostas serão convertidas em requisitos no spec delta `specs/cadastro/spec.md`.
