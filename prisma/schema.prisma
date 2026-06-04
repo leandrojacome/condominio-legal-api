@@ -211,9 +211,10 @@ model Cobranca {
   criadoEm    DateTime        @default(now())
   atualizadoEm DateTime       @updatedAt
 
-  unidade    Unidade          @relation(fields: [unidadeId], references: [id])
-  emissoes   CobrancaEmissao[]
-  pagamentos Pagamento[]
+  unidade         Unidade           @relation(fields: [unidadeId], references: [id])
+  emissoes        CobrancaEmissao[]
+  pagamentos      Pagamento[]
+  conciliacaoLogs ConciliacaoLog[]
 
   @@index([condominioId])
   @@index([condominioId, status])
@@ -259,6 +260,21 @@ model Pagamento {
   criadoEm       DateTime        @default(now())
 
   cobranca Cobranca @relation(fields: [cobrancaId], references: [id])
+}
+
+// Audit log — append-only per ARD §3.9
+model ConciliacaoLog {
+  id                    String          @id @default(cuid())
+  cobrancaId            String
+  externalTransactionId String          @unique // UNIQUE per ARD §4.4
+  metodo                MetodoPagamento
+  valorPago             Float
+  dataEvento            DateTime
+  criadoEm             DateTime        @default(now())
+
+  cobranca Cobranca @relation(fields: [cobrancaId], references: [id])
+
+  @@index([cobrancaId])
 }
 
 // ─── Módulo Comunicação ───────────────────────────────────────────────────────
@@ -351,6 +367,7 @@ model AreaComum {
   antecedenciaMaximaDias    Int              @default(30)
   limiteReservasPorUnidade  Int              @default(1)
   taxaUso                   Float?
+  prazoCancelamentoHoras    Int              @default(24)
   ativa                     Boolean          @default(true)
   criadoEm                 DateTime         @default(now())
   atualizadoEm             DateTime         @updatedAt
