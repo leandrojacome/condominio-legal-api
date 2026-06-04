@@ -44,23 +44,33 @@ O sistema MUST direcionar a cobrança de uma unidade ao **responsável financeir
 - **WHEN** uma cobrança é gerada para essa unidade
 - **THEN** o proprietário consta como devedor da cobrança
 
-### Requirement: Emissão de boleto via integração bancária
-O sistema MUST emitir boleto para uma cobrança por meio de integração bancária/gateway, registrando os identificadores retornados (ex.: nosso número e linha digitável) e MUST conciliar o pagamento a partir do retorno da instituição, marcando a cobrança como `paga` na confirmação.
+### Requirement: Emissão e pagamento via boleto e Pix
+O sistema MUST permitir que uma cobrança seja emitida e paga por **boleto** (integração bancária/gateway, com nosso número e linha digitável) e/ou por **Pix** (com QR Code/copia-e-cola e identificador da transação). O sistema MUST conciliar o pagamento a partir do retorno da instituição/PSP, marcando a cobrança como `paga` na confirmação, independentemente do método. Uma mesma cobrança MUST poder ser paga por qualquer um dos métodos disponibilizados, e a confirmação por um método MUST encerrar a cobrança para os demais.
 
 #### Scenario: Emissão de boleto com sucesso
 - **GIVEN** uma cobrança `em_aberto`
 - **WHEN** o gestor solicita a emissão do boleto e a integração retorna com sucesso
 - **THEN** a cobrança passa a ter linha digitável e nosso número registrados
 
-#### Scenario: Conciliação de pagamento confirmado
-- **GIVEN** uma cobrança com boleto emitido
-- **WHEN** a integração informa a confirmação do pagamento
-- **THEN** a cobrança é marcada como `paga` com a data de pagamento registrada
+#### Scenario: Emissão de cobrança Pix com sucesso
+- **GIVEN** uma cobrança `em_aberto`
+- **WHEN** o gestor solicita a cobrança via Pix e a integração retorna com sucesso
+- **THEN** a cobrança passa a ter QR Code/copia-e-cola e identificador da transação Pix registrados
+
+#### Scenario: Conciliação de pagamento confirmado (boleto ou Pix)
+- **GIVEN** uma cobrança com boleto e/ou Pix emitidos
+- **WHEN** a integração informa a confirmação do pagamento por qualquer um dos métodos
+- **THEN** a cobrança é marcada como `paga` com a data, o valor e o método de pagamento registrados
+
+#### Scenario: Pagamento por Pix encerra o boleto da mesma cobrança
+- **GIVEN** uma cobrança com boleto e Pix emitidos para o mesmo valor
+- **WHEN** o pagamento é confirmado via Pix
+- **THEN** a cobrança é marcada como `paga` e o boleto correspondente deixa de ser pagável (evitando pagamento em duplicidade)
 
 #### Scenario: Falha na integração de emissão
 - **GIVEN** uma cobrança `em_aberto`
-- **WHEN** a integração bancária retorna erro na emissão do boleto
-- **THEN** a cobrança permanece `em_aberto`, nenhuma linha digitável é gravada e o erro é registrado para nova tentativa
+- **WHEN** a integração (bancária ou de Pix) retorna erro na emissão
+- **THEN** a cobrança permanece `em_aberto`, nenhum identificador de pagamento é gravado e o erro é registrado para nova tentativa
 
 ### Requirement: Inadimplência e cálculo de encargos
 O sistema MUST marcar automaticamente como `em_atraso` toda cobrança não paga após a data de vencimento, e MUST calcular multa e juros configuráveis pelo condomínio sobre o valor em atraso.

@@ -52,7 +52,7 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Tipos de cobrança: `taxa_mensal`, `fundo_reserva`, `extra_rateio`, `multa_juros`, `consumo`.
   - Rateio **configurável por cobrança**: `fracao_ideal` ou `igual`.
   - Devedor: **responsável financeiro** da unidade (fallback ao `proprietario` quando não definido).
-  - Emissão via **boleto integrado** (integração bancária/gateway, com conciliação de pagamento).
+  - Emissão e pagamento via **boleto E Pix** (integração bancária/PSP, com conciliação automática; pagamento por um método encerra os demais). *(Pix adicionado pelo board em 2026-06-04.)*
   - Inadimplência: marcar `em_atraso`, calcular multa+juros configuráveis, relatório de inadimplentes e notificação de cobrança.
   - Capacidade **`financeiro` CONSOLIDADA** em `specs/financeiro/spec.md` (6 requisitos, cenários happy/erro, `validate --strict` ok).
 - **Rodada 4 (Comunicação/Avisos)** — aberta na thread (próxima capacidade da sequência aprovada).
