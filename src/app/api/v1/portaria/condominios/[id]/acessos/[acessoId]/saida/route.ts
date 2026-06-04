@@ -23,7 +23,7 @@ export const POST = requirePerfil(
     const params = await ctx.params;
     const condominioId = params["id"] as string;
     const acessoId = params["acessoId"] as string;
-    const tenantCtx = await getTenantContext();
+    const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
       return forbiddenError("Access denied to this condominio") as unknown as Response;

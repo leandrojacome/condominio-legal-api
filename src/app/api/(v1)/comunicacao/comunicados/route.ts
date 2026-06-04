@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { requirePerfil, PerfilUsuario } from "@/lib/auth/rbac";
 import { validationError, unauthorizedError, handleRouteError } from "@/lib/errors";
 import { CriarComunicadoSchema } from "@/domain/comunicacao/schemas";
@@ -13,11 +13,10 @@ const PUBLICADORES: PerfilUsuario[] = [
   PerfilUsuario.CONSELHO,
 ];
 
-// GET /api/v1/comunicacao/comunicados — list comunicados visible to authenticated user
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) return unauthorizedError();
+    const session = await getAuthSession(req);
+    if (!session) return unauthorizedError();
 
     const { searchParams } = new URL(req.url);
     const soMeus = searchParams.get("soMeus") === "true";
@@ -26,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     const result = await listarComunicados({
       condominioId: session.condominioId,
-      userId: session.user.id,
+      userId: session.userId,
       soMeus,
       page,
       perPage,
@@ -38,11 +37,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/v1/comunicacao/comunicados — publish a comunicado (RBAC: publicadores only)
 async function postHandler(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) return unauthorizedError();
+    const session = await getAuthSession(req);
+    if (!session) return unauthorizedError();
 
     const body: unknown = await req.json();
     const parsed = CriarComunicadoSchema.safeParse(body);
@@ -50,7 +48,7 @@ async function postHandler(req: NextRequest) {
 
     const result = await publicarComunicado(
       session.condominioId,
-      session.user.id,
+      session.userId,
       parsed.data
     );
 

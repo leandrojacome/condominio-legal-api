@@ -11,7 +11,7 @@ export const DELETE = requirePerfil(
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const vinculoId = (await ctx.params)["vinculoId"] as string;
-    const tenantCtx = await getTenantContext();
+    const tenantCtx = await getTenantContext(req);
     const db = getPrismaWithTenant(tenantCtx.condominioId);
 
     const vinculo = await db.vinculo.findFirst({ where: { id: vinculoId } });

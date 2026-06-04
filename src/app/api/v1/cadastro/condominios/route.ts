@@ -20,7 +20,7 @@ export const GET = requirePerfil(
   PerfilUsuario.CONSELHO
 )(async (req: NextRequest) => {
   try {
-    const ctx = await getTenantContext();
+    const ctx = await getTenantContext(req);
     const db = getPrismaWithTenant(ctx.condominioId);
     const { cursor, limit } = parsePaginationParams(req.nextUrl.searchParams);
     const lim = limit ?? 20;

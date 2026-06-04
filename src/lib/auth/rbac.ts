@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import { forbiddenError, unauthorizedError } from "@/lib/errors";
 
@@ -13,13 +13,13 @@ export type RouteHandler = (req: NextRequest, ctx: RouteContext) => Promise<Resp
 export function requirePerfil(...perfis: PerfilUsuario[]) {
   return (handler: RouteHandler): RouteHandler =>
     async (req: NextRequest, ctx: RouteContext) => {
-      const session = await auth();
+      const session = await getAuthSession(req);
 
-      if (!session?.user) {
+      if (!session) {
         return unauthorizedError() as unknown as Response;
       }
 
-      if (!session.perfil || !perfis.includes(session.perfil)) {
+      if (!perfis.includes(session.perfil)) {
         return forbiddenError(
           `Requires one of: ${perfis.join(", ")}`
         ) as unknown as Response;

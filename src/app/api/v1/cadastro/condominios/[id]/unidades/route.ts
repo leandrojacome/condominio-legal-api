@@ -14,7 +14,7 @@ export const GET = requirePerfil(
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const condominioId = (await ctx.params)["id"] as string;
-    const tenantCtx = await getTenantContext();
+    const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
       return forbiddenError("Access denied to this condominio") as unknown as Response;
@@ -41,7 +41,7 @@ export const POST = requirePerfil(
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const condominioId = (await ctx.params)["id"] as string;
-    const tenantCtx = await getTenantContext();
+    const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
       return forbiddenError("Access denied to this condominio") as unknown as Response;

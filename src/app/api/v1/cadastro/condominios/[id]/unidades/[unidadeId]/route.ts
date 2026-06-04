@@ -16,7 +16,7 @@ export const GET = requirePerfil(
     const params = await ctx.params;
     const condominioId = params["id"] as string;
     const unidadeId = params["unidadeId"] as string;
-    const tenantCtx = await getTenantContext();
+    const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
       return forbiddenError("Access denied to this condominio") as unknown as Response;
@@ -39,7 +39,7 @@ export const PATCH = requirePerfil(
     const params = await ctx.params;
     const condominioId = params["id"] as string;
     const unidadeId = params["unidadeId"] as string;
-    const tenantCtx = await getTenantContext();
+    const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
       return forbiddenError("Access denied to this condominio") as unknown as Response;
