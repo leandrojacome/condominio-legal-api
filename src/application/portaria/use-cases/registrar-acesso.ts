@@ -30,13 +30,13 @@ export async function registrarAcesso(
       );
     }
 
-    // Mark as used and auto-authorize
+    // Mark as used; visitor is entering now → no_condominio per spec scenario
     await db.preAutorizacao.update({
       where: { id: preAutorizacaoId },
       data: { utilizada: true },
     });
 
-    status = "autorizado";
+    status = "no_condominio";
   } else {
     // No pre-auth: status awaits morador confirmation
     status = "aguardando_confirmacao";

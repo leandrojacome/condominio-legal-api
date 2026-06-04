@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantContext } from "@/lib/tenant";
-import { CancelarReservaSchema } from "@/domain/reservas/schemas";
+import { RejeitarReservaSchema } from "@/domain/reservas/schemas";
 import { forbiddenError, validationError, handleRouteError } from "@/lib/errors";
 import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
-import { cancelarReserva } from "@/application/reservas/use-cases/cancelar-reserva";
+import { rejeitarReserva } from "@/application/reservas/use-cases/rejeitar-reserva";
 
-// POST /api/v1/reservas/condominios/:id/reservas/:reservaId/cancelar
-// Owner or admin can cancel; applies cancellation penalty rule per area config
+// POST /api/v1/reservas/condominios/:id/reservas/:reservaId/rejeitar
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO,
-  PerfilUsuario.ADMINISTRADORA,
-  PerfilUsuario.PROPRIETARIO,
-  PerfilUsuario.INQUILINO
+  PerfilUsuario.ADMINISTRADORA
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const params = await ctx.params;
@@ -25,14 +22,14 @@ export const POST = requirePerfil(
       return forbiddenError("Access denied") as unknown as Response;
     }
 
-    const body = await req.json().catch(() => ({})) as unknown;
-    const parsed = CancelarReservaSchema.safeParse(body);
+    const body = await req.json() as unknown;
+    const parsed = RejeitarReservaSchema.safeParse(body);
     if (!parsed.success) {
       return validationError(parsed.error.flatten()) as unknown as Response;
     }
 
-    const result = await cancelarReserva(tenantCtx.condominioId, reservaId, tenantCtx.userId);
-    return NextResponse.json(result);
+    const reserva = await rejeitarReserva(tenantCtx.condominioId, reservaId, parsed.data.motivo);
+    return NextResponse.json(reserva);
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }

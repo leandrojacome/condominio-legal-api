@@ -55,13 +55,12 @@ export const GET = requirePerfil(
   }
 });
 
-// POST /api/v1/reservas/condominios/:id/reservas (any active vinculo)
+// POST /api/v1/reservas/condominios/:id/reservas — residents and managers only
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO,
   PerfilUsuario.ADMINISTRADORA,
   PerfilUsuario.PROPRIETARIO,
-  PerfilUsuario.INQUILINO,
-  PerfilUsuario.CONSELHO
+  PerfilUsuario.INQUILINO
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const condominioId = (await ctx.params)["id"] as string;
@@ -76,12 +75,17 @@ export const POST = requirePerfil(
     if (!parsed.success)
       return validationError(parsed.error.flatten()) as unknown as Response;
 
+    const unidadeId = parsed.data.unidadeId;
+    if (!unidadeId) {
+      return validationError({ formErrors: ["unidadeId is required"], fieldErrors: {} }) as unknown as Response;
+    }
     const reserva = await criarReserva({
       condominioId,
       userId: tenantCtx.userId,
       areaComumId: parsed.data.areaComumId,
-      inicio: new Date(parsed.data.inicio),
-      fim: new Date(parsed.data.fim),
+      unidadeId,
+      inicio: parsed.data.inicio,
+      fim: parsed.data.fim,
     });
 
     return NextResponse.json(reserva, { status: 201 });

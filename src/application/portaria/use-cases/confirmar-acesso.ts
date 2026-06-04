@@ -26,8 +26,9 @@ export async function confirmarAcesso(
     );
   }
 
+  // autorizar → no_condominio (visitor enters); negar → negado
   const novoStatus: StatusAcesso =
-    input.decisao === "autorizar" ? StatusAcesso.autorizado : StatusAcesso.negado;
+    input.decisao === "autorizar" ? StatusAcesso.no_condominio : StatusAcesso.negado;
 
   const updated = await db.registroAcesso.update({
     where: { id: acessoId },

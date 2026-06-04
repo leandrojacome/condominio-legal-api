@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantContext } from "@/lib/tenant";
-import { getPrismaWithTenant } from "@/infrastructure/db/client";
-import {
-  forbiddenError,
-  notFoundError,
-  unprocessableError,
-  handleRouteError,
-} from "@/lib/errors";
+import { AprovarReservaSchema } from "@/domain/reservas/schemas";
+import { forbiddenError, validationError, handleRouteError } from "@/lib/errors";
 import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
+import { aprovarReserva } from "@/application/reservas/use-cases/aprovar-reserva";
 
 // POST /api/v1/reservas/condominios/:id/reservas/:reservaId/aprovar
 export const POST = requirePerfil(
@@ -26,55 +22,14 @@ export const POST = requirePerfil(
       return forbiddenError("Access denied") as unknown as Response;
     }
 
-    const db = getPrismaWithTenant(tenantCtx.condominioId);
-
-    const reserva = await db.reserva.findFirst({ where: { id: reservaId } });
-    if (!reserva) return notFoundError("Reserva") as unknown as Response;
-
-    if (reserva.status !== "pendente") {
-      return unprocessableError(
-        `Reserva não está pendente (status: ${reserva.status})`
-      ) as unknown as Response;
+    const body = await req.json().catch(() => ({})) as unknown;
+    const parsed = AprovarReservaSchema.safeParse(body);
+    if (!parsed.success) {
+      return validationError(parsed.error.flatten()) as unknown as Response;
     }
 
-    const area = await db.areaComum.findFirst({
-      where: { id: reserva.areaComumId },
-    });
-
-    if (!area) return notFoundError("AreaComum") as unknown as Response;
-
-    // Update reserva to confirmada
-    const updated = await db.reserva.update({
-      where: { id: reservaId },
-      data: { status: "confirmada" },
-    });
-
-    // Create cobrança if taxaUso > 0
-    if (area.taxaUso !== null && area.taxaUso !== undefined && area.taxaUso > 0) {
-      const hoje = new Date();
-      const competencia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
-
-      const cobranca = await db.cobranca.create({
-        data: {
-          condominioId,
-          unidadeId: reserva.unidadeId,
-          tipo: "consumo",
-          valor: area.taxaUso,
-          competencia,
-          vencimento: reserva.inicio,
-          descricao: `Taxa de uso: ${area.nome}`,
-        },
-      });
-
-      const comCobranca = await db.reserva.update({
-        where: { id: reservaId },
-        data: { cobrancaId: cobranca.id },
-      });
-
-      return NextResponse.json(comCobranca);
-    }
-
-    return NextResponse.json(updated);
+    const reserva = await aprovarReserva(tenantCtx.condominioId, reservaId, parsed.data.observacao);
+    return NextResponse.json(reserva);
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }
