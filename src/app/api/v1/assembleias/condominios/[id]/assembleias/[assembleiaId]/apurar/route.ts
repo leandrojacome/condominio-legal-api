@@ -4,7 +4,7 @@ import { forbiddenError, handleRouteError } from "@/lib/errors";
 import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
-import { apurarResultado } from "@/application/assembleias/use-cases/apurar-resultado";
+import { apurarAssembleia } from "@/application/assembleias/use-cases/apurar-assembleia";
 
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO,
@@ -20,7 +20,7 @@ export const POST = requirePerfil(
       return forbiddenError("Access denied") as unknown as Response;
     }
 
-    const resultado = await apurarResultado({ condominioId, assembleiaId });
+    const resultado = await apurarAssembleia({ condominioId, assembleiaId });
 
     return NextResponse.json(resultado);
   } catch (err) {

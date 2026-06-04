@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantContext } from "@/lib/tenant";
-import { RegistrarVotoSchema } from "@/domain/assembleias/schemas";
+import { NotificarResultadoSchema } from "@/domain/assembleias/schemas";
 import { validationError, forbiddenError, handleRouteError } from "@/lib/errors";
 import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
-import { registrarVoto } from "@/application/assembleias/use-cases/registrar-voto";
-import type { OpcaoVoto } from "@prisma/client";
+import { notificarResultado } from "@/application/assembleias/use-cases/notificar-resultado";
+import type { CanalNotificacao } from "@prisma/client";
 
+// POST — send assembly result notification via Comunicação module
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO,
   PerfilUsuario.ADMINISTRADORA,
-  PerfilUsuario.PROPRIETARIO,
-  PerfilUsuario.INQUILINO,
-  PerfilUsuario.CONSELHO,
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const params = await ctx.params;
@@ -26,21 +24,23 @@ export const POST = requirePerfil(
     }
 
     const body = await req.json() as unknown;
-    const parsed = RegistrarVotoSchema.safeParse(body);
+    const parsed = NotificarResultadoSchema.safeParse(body);
+
     if (!parsed.success) {
       return validationError(parsed.error.flatten()) as unknown as Response;
     }
 
-    const voto = await registrarVoto({
+    const notificarInput: import("@/application/assembleias/use-cases/notificar-resultado").NotificarResultadoInput = {
       condominioId,
       assembleiaId,
-      itemPautaId: parsed.data.itemPautaId,
-      userId: tenantCtx.userId,
-      opcao: parsed.data.opcao as OpcaoVoto,
-      ...(parsed.data.unidadeId !== undefined ? { unidadeId: parsed.data.unidadeId } : {}),
-    });
+      autorId: tenantCtx.userId,
+    };
+    if (parsed.data.canais !== undefined) {
+      notificarInput.canais = parsed.data.canais as CanalNotificacao[];
+    }
+    const resultado = await notificarResultado(notificarInput);
 
-    return NextResponse.json(voto, { status: 201 });
+    return NextResponse.json(resultado, { status: 201 });
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }

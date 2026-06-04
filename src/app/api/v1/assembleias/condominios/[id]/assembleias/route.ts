@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTenantContext } from "@/lib/tenant";
 import { getPrismaWithTenant } from "@/infrastructure/db/client";
-import { CriarAssembleiaSchema } from "@/domain/assembleias/schemas";
+import { ConvocarAssembleiaSchema } from "@/domain/assembleias/schemas";
 import { validationError, forbiddenError, handleRouteError } from "@/lib/errors";
 import { parsePaginationParams, buildPage } from "@/lib/pagination";
 import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
+import { convocarAssembleia } from "@/application/assembleias/use-cases/convocar-assembleia";
 
 export const GET = requirePerfil(
   PerfilUsuario.SINDICO,
@@ -36,6 +37,7 @@ export const GET = requirePerfil(
       },
       take: lim + 1,
       orderBy: { dataHora: "desc" },
+      include: { itensPauta: { orderBy: { ordem: "asc" } } },
     });
 
     return NextResponse.json(buildPage(items, lim));
@@ -44,6 +46,7 @@ export const GET = requirePerfil(
   }
 });
 
+// POST — convocar assembleia com itens de pauta obrigatórios (spec §Convocação exige ao menos um item de pauta)
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO,
   PerfilUsuario.ADMINISTRADORA,
@@ -57,23 +60,16 @@ export const POST = requirePerfil(
     }
 
     const body = await req.json() as unknown;
-    const parsed = CriarAssembleiaSchema.safeParse(body);
+    const parsed = ConvocarAssembleiaSchema.safeParse(body);
+
     if (!parsed.success) {
       return validationError(parsed.error.flatten()) as unknown as Response;
     }
 
-    const db = getPrismaWithTenant(tenantCtx.condominioId);
-
-    const assembleia = await db.assembleia.create({
-      data: {
-        condominioId,
-        titulo: parsed.data.titulo,
-        dataHora: new Date(parsed.data.dataHora),
-        ...(parsed.data.local !== undefined ? { local: parsed.data.local } : {}),
-        ...(parsed.data.modalidade !== undefined
-          ? { modalidade: parsed.data.modalidade }
-          : {}),
-      },
+    const assembleia = await convocarAssembleia({
+      condominioId,
+      userId: tenantCtx.userId,
+      data: parsed.data,
     });
 
     return NextResponse.json(assembleia, { status: 201 });

@@ -6,6 +6,7 @@ import { forbiddenError, notFoundError, unprocessableError, handleRouteError } f
 import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
+import { gerarAta } from "@/application/assembleias/use-cases/gerar-ata";
 
 export const GET = requirePerfil(
   PerfilUsuario.SINDICO,
@@ -47,6 +48,29 @@ export const GET = requirePerfil(
     }
 
     return NextResponse.json(ata);
+  } catch (err) {
+    return handleRouteError(err) as unknown as Response;
+  }
+});
+
+// POST — generate/regenerate ata after apuração
+export const POST = requirePerfil(
+  PerfilUsuario.SINDICO,
+  PerfilUsuario.ADMINISTRADORA,
+)(async (req: NextRequest, ctx: RouteContext) => {
+  try {
+    const params = await ctx.params;
+    const condominioId = params["id"] as string;
+    const assembleiaId = params["assembleiaId"] as string;
+    const tenantCtx = await getTenantContext();
+
+    if (condominioId !== tenantCtx.condominioId) {
+      return forbiddenError("Access denied") as unknown as Response;
+    }
+
+    const ata = await gerarAta({ condominioId, assembleiaId });
+
+    return NextResponse.json(ata, { status: 201 });
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }
