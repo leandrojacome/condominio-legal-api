@@ -3,6 +3,9 @@ import {
   CriarAreaComumSchema,
   CriarReservaSchema,
   AtualizarAreaComumSchema,
+  AprovarReservaSchema,
+  RejeitarReservaSchema,
+  CancelarReservaSchema,
 } from "../schemas";
 
 describe("CriarAreaComumSchema", () => {
@@ -118,5 +121,49 @@ describe("CriarReservaSchema", () => {
   it("rejects missing fim", () => {
     const { fim: _fim, ...noFim } = base;
     expect(CriarReservaSchema.safeParse(noFim).success).toBe(false);
+  });
+
+  it("accepts optional unidadeId", () => {
+    const { ...withoutUnidade } = base;
+    // unidadeId is optional — omitting it is valid
+    expect(CriarReservaSchema.safeParse(withoutUnidade).success).toBe(true);
+  });
+});
+
+describe("AprovarReservaSchema", () => {
+  it("accepts empty body", () => {
+    expect(AprovarReservaSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts optional observacao", () => {
+    expect(AprovarReservaSchema.safeParse({ observacao: "OK" }).success).toBe(true);
+  });
+
+  it("rejects observacao over 500 chars", () => {
+    expect(AprovarReservaSchema.safeParse({ observacao: "x".repeat(501) }).success).toBe(false);
+  });
+});
+
+describe("RejeitarReservaSchema", () => {
+  it("accepts valid motivo", () => {
+    expect(RejeitarReservaSchema.safeParse({ motivo: "Área indisponível" }).success).toBe(true);
+  });
+
+  it("rejects empty motivo", () => {
+    expect(RejeitarReservaSchema.safeParse({ motivo: "" }).success).toBe(false);
+  });
+
+  it("rejects missing motivo", () => {
+    expect(RejeitarReservaSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("CancelarReservaSchema", () => {
+  it("accepts empty body", () => {
+    expect(CancelarReservaSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts optional motivo", () => {
+    expect(CancelarReservaSchema.safeParse({ motivo: "Mudança de planos" }).success).toBe(true);
   });
 });
