@@ -61,7 +61,11 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Podem publicar: `sindico`, `administradora`, `porteiro`, `conselho` (moradores **não** publicam).
   - Confirmação de leitura: **obrigatória em todos** os comunicados.
   - Capacidade **`comunicacao` CONSOLIDADA** em `specs/comunicacao/spec.md` (5 requisitos, `validate --strict` ok).
-- **Rodada 5 (Reservas de áreas comuns)** — aberta na thread (próxima capacidade da sequência aprovada).
+- **Rodada 5 (Reservas de áreas comuns)** — respondida pelo board em 2026-06-04. Decisões:
+  - Granularidade, política de conflito e modo de aprovação **configuráveis por área** (`dia_inteiro`/`turno`/`horario`; `exclusiva`/`capacidade`; `automatica`/`requer_aprovacao`).
+  - Regras: bloquear inadimplente, antecedência mín/máx, limite por unidade, taxa de uso (gera cobrança no Financeiro) e regras de cancelamento.
+  - Capacidade **`reservas-areas-comuns` CONSOLIDADA** em `specs/reservas-areas-comuns/spec.md` (7 requisitos, `validate --strict` ok).
+- **Rodada 6 (Assembleias/Votação)** — aberta na thread (próxima capacidade da sequência aprovada).
 
 ## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
 
