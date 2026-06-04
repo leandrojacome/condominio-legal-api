@@ -48,7 +48,14 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Uma pessoa pode estar vinculada a **várias** unidades.
   - Dados obrigatórios da pessoa: CPF, e-mail, telefone + **nome** (campo nome obrigatório **confirmado pelo Chefe** em 2026-06-04, salvo objeção do board).
   - Capacidade **`cadastro` CONSOLIDADA** em `specs/cadastro/spec.md` (5 requisitos, cenários happy/erro, `validate --strict` ok).
-- **Rodada 3 (Financeiro)** — aberta na thread; detalha cobranças/taxas, inadimplência e responsável financeiro.
+- **Rodada 3 (Financeiro)** — respondida pelo board em 2026-06-04. Decisões:
+  - Tipos de cobrança: `taxa_mensal`, `fundo_reserva`, `extra_rateio`, `multa_juros`, `consumo`.
+  - Rateio **configurável por cobrança**: `fracao_ideal` ou `igual`.
+  - Devedor: **responsável financeiro** da unidade (fallback ao `proprietario` quando não definido).
+  - Emissão via **boleto integrado** (integração bancária/gateway, com conciliação de pagamento).
+  - Inadimplência: marcar `em_atraso`, calcular multa+juros configuráveis, relatório de inadimplentes e notificação de cobrança.
+  - Capacidade **`financeiro` CONSOLIDADA** em `specs/financeiro/spec.md` (6 requisitos, cenários happy/erro, `validate --strict` ok).
+- **Rodada 4 (Comunicação/Avisos)** — aberta na thread (próxima capacidade da sequência aprovada).
 
 ## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
 
