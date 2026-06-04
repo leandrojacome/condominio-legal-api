@@ -55,7 +55,13 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Emissão e pagamento via **boleto E Pix** (integração bancária/PSP, com conciliação automática; pagamento por um método encerra os demais). *(Pix adicionado pelo board em 2026-06-04.)*
   - Inadimplência: marcar `em_atraso`, calcular multa+juros configuráveis, relatório de inadimplentes e notificação de cobrança.
   - Capacidade **`financeiro` CONSOLIDADA** em `specs/financeiro/spec.md` (6 requisitos, cenários happy/erro, `validate --strict` ok).
-- **Rodada 4 (Comunicação/Avisos)** — aberta na thread (próxima capacidade da sequência aprovada).
+- **Rodada 4 (Comunicação/Avisos)** — respondida pelo board em 2026-06-04. Decisões:
+  - Tipos: `aviso_geral`, `aviso_segmentado`, `aviso_individual`, `convocacao`.
+  - Canais: `in_app`, `email`, `push`, `sms_whatsapp` (todos).
+  - Podem publicar: `sindico`, `administradora`, `porteiro`, `conselho` (moradores **não** publicam).
+  - Confirmação de leitura: **obrigatória em todos** os comunicados.
+  - Capacidade **`comunicacao` CONSOLIDADA** em `specs/comunicacao/spec.md` (5 requisitos, `validate --strict` ok).
+- **Rodada 5 (Reservas de áreas comuns)** — aberta na thread (próxima capacidade da sequência aprovada).
 
 ## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
 
