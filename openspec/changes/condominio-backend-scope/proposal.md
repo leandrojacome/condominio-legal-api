@@ -71,7 +71,13 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Regras: quórum mínimo, bloquear inadimplente, procuração, voto secreto opcional por pauta, múltiplas pautas.
   - Saídas: apuração automática, ata oficial, notificação do resultado (→ Comunicação), histórico auditável.
   - Capacidade **`assembleias-votacoes` CONSOLIDADA** em `specs/assembleias-votacoes/spec.md` (6 requisitos, `validate --strict` ok).
-- **Rodada 7 (Ocorrências/Chamados)** — aberta na thread (última capacidade núcleo da sequência aprovada).
+- **Rodada 7 (Ocorrências/Chamados)** — respondida pelo board em 2026-06-04. Decisões:
+  - Tipos: `manutencao`, `reclamacao`, `sugestao`, `seguranca`, `achados`.
+  - Abertura: **qualquer morador** + gestão/portaria.
+  - Fluxo de status **configurável pelo condomínio** (com transições válidas).
+  - Recursos: anexos, comentários/histórico, prioridade/SLA, atribuição a responsável, notificação ao autor (→ Comunicação), avaliação ao encerrar.
+  - Capacidade **`ocorrencias-manutencao` CONSOLIDADA** em `specs/ocorrencias-manutencao/spec.md` (6 requisitos, `validate --strict` ok).
+- **Rodada 8 (Portaria/Acessos)** — aberta na thread (módulo priorizado na Rodada 1, ainda pendente). Fecha o conjunto dos 7 módulos priorizados.
 
 ## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
 
