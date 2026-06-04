@@ -92,7 +92,7 @@ async function conciliarPagamento(input: ConciliarInput) {
     return;
   }
 
-  // Idempotency: UNIQUE on externalTxId prevents double reconciliation per ARD §4.4
+  // Idempotency: UNIQUE on externalTxId / externalTransactionId prevents double reconciliation per ARD §4.4
   await prisma.$transaction(async (tx) => {
     const existing = await tx.pagamento.findUnique({
       where: { externalTxId: input.externalTxId },
@@ -109,7 +109,18 @@ async function conciliarPagamento(input: ConciliarInput) {
       },
     });
 
-    // Mark all emissões for this cobrança as cancelled (payment by one method closes others)
+    // Append-only audit log per ARD §3.9
+    await tx.conciliacaoLog.create({
+      data: {
+        cobrancaId: emissao.cobrancaId,
+        externalTransactionId: input.externalTxId,
+        metodo: input.metodo,
+        valorPago: input.valor,
+        dataEvento: input.dataPagamento,
+      },
+    });
+
+    // Payment by one method closes all others (ARD §4.4)
     await tx.cobrancaEmissao.updateMany({
       where: { cobrancaId: emissao.cobrancaId, status: "emitido" },
       data: { status: "cancelado" },
