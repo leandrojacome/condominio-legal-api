@@ -77,7 +77,29 @@ Brainstorm em andamento. As decisões da **Rodada 1 (escopo)** já foram tomadas
   - Fluxo de status **configurável pelo condomínio** (com transições válidas).
   - Recursos: anexos, comentários/histórico, prioridade/SLA, atribuição a responsável, notificação ao autor (→ Comunicação), avaliação ao encerrar.
   - Capacidade **`ocorrencias-manutencao` CONSOLIDADA** em `specs/ocorrencias-manutencao/spec.md` (6 requisitos, `validate --strict` ok).
-- **Rodada 8 (Portaria/Acessos)** — aberta na thread (módulo priorizado na Rodada 1, ainda pendente). Fecha o conjunto dos 7 módulos priorizados.
+- **Rodada 8 (Portaria/Acessos)** — respondida pelo board em 2026-06-04. Decisões:
+  - Tipos: `visitante`, `prestador`, `entrega`, `veiculo`.
+  - Autorização: **pré-autorização do morador E confirmação na chegada** (ambos os fluxos).
+  - Encomendas: registrar recebimento, notificar morador (→ Comunicação), registrar retirada, foto/etiqueta.
+  - Registro de acesso: identificação, unidade destino, horários entrada/saída, autorizador, histórico auditável.
+  - Capacidade **`portaria-acessos` CONSOLIDADA** em `specs/portaria-acessos/spec.md` (4 requisitos, `validate --strict` ok).
+
+## Status do brainstorm: 1ª LEVA COMPLETA ✅ (7/7 módulos priorizados)
+
+Todos os 7 módulos priorizados na Rodada 1 estão especificados e validados (`openspec validate --strict` = valid). **39 requisitos `MUST`** com cenários testáveis (happy path + erro), distribuídos em:
+
+| Capacidade | Requisitos |
+|---|---|
+| `cadastro` | 5 |
+| `financeiro` | 6 |
+| `comunicacao` | 5 |
+| `reservas-areas-comuns` | 7 |
+| `assembleias-votacoes` | 6 |
+| `ocorrencias-manutencao` | 6 |
+| `portaria-acessos` | 4 |
+| **Total** | **39** |
+
+Transversais embutidos em todas as capacidades: isolamento multi-tenant e autorização por perfil (os 6 perfis). Próximo passo é o gate de implementação conduzido pelo Chefe (ARD → UXDesigner → Dev Backend → Dev Frontend → QA).
 
 ## Sequência de capacidades (aprovada pelo Chefe — validar prioridade com o board)
 
