@@ -1,6 +1,8 @@
 import { getPrismaWithTenant } from "@/infrastructure/db/client";
+import { prisma } from "@/infrastructure/db/client";
 import type { RegistrarAcessoInput } from "@/domain/portaria/schemas";
 import { AppError } from "@/lib/errors";
+import { solicitarConfirmacaoMorador } from "./confirmar-acesso";
 
 export async function registrarAcesso(
   condominioId: string,
@@ -56,6 +58,42 @@ export async function registrarAcesso(
       status: statusEnum,
     },
   });
+
+  // Notify moradores to confirm access when no pre-authorization exists
+  if (status === "aguardando_confirmacao") {
+    const unidade = await db.unidade.findFirst({
+      where: { id: input.unidadeDestinoId },
+      select: { numero: true },
+    });
+    const unidadeLabel = unidade?.numero ?? input.unidadeDestinoId;
+
+    const moradores = await prisma.user.findMany({
+      where: {
+        vinculos: {
+          some: {
+            condominioId,
+            unidadeId: input.unidadeDestinoId,
+            ativo: true,
+          },
+        },
+        fcmToken: { not: null },
+      },
+      select: { fcmToken: true },
+    });
+
+    await Promise.allSettled(
+      moradores
+        .filter((m): m is { fcmToken: string } => m.fcmToken !== null)
+        .map((m) =>
+          solicitarConfirmacaoMorador(
+            m.fcmToken,
+            input.nomeVisitante,
+            unidadeLabel,
+            acesso.id
+          )
+        )
+    );
+  }
 
   return acesso;
 }
