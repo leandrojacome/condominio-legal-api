@@ -8,7 +8,7 @@ import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
 import { criarCobranca } from "@/application/financeiro/use-cases/criar-cobranca";
-import type { TipoCobranca } from "@prisma/client";
+import { StatusCobranca, type TipoCobranca } from "@prisma/client";
 import type { CriarCobrancaInput } from "@/application/financeiro/use-cases/criar-cobranca";
 
 export const GET = requirePerfil(
@@ -32,7 +32,7 @@ export const GET = requirePerfil(
     const items = await db.cobranca.findMany({
       where: {
         ...(cursor ? { id: { gt: cursor } } : {}),
-        ...(status ? { status: status as never } : {}),
+        ...(status && (Object.values(StatusCobranca) as string[]).includes(status) ? { status: status as StatusCobranca } : {}),
         ...(unidadeId ? { unidadeId } : {}),
       },
       take: lim + 1,

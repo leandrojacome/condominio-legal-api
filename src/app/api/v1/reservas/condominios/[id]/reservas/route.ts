@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTenantContext } from "@/lib/tenant";
 import { getPrismaWithTenant } from "@/infrastructure/db/client";
 import { CriarReservaSchema } from "@/domain/reservas/schemas";
+import { StatusReserva } from "@prisma/client";
 import {
   validationError,
   forbiddenError,
@@ -40,7 +41,7 @@ export const GET = requirePerfil(
     const items = await db.reserva.findMany({
       where: {
         ...(cursor ? { id: { gt: cursor } } : {}),
-        ...(status ? { status: status as never } : {}),
+        ...(status && (Object.values(StatusReserva) as string[]).includes(status) ? { status: status as StatusReserva } : {}),
         ...(areaComumId ? { areaComumId } : {}),
         ...(unidadeId ? { unidadeId } : {}),
       },

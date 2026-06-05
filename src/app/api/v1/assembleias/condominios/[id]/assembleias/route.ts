@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getTenantContext } from "@/lib/tenant";
 import { getPrismaWithTenant } from "@/infrastructure/db/client";
 import { ConvocarAssembleiaSchema } from "@/domain/assembleias/schemas";
+import { StatusAssembleia } from "@prisma/client";
 import { validationError, forbiddenError, handleRouteError } from "@/lib/errors";
 import { parsePaginationParams, buildPage } from "@/lib/pagination";
 import { requirePerfil } from "@/lib/auth/rbac";
@@ -33,7 +34,7 @@ export const GET = requirePerfil(
     const items = await db.assembleia.findMany({
       where: {
         ...(cursor ? { id: { gt: cursor } } : {}),
-        ...(status ? { status: status as never } : {}),
+        ...(status && (Object.values(StatusAssembleia) as string[]).includes(status) ? { status: status as StatusAssembleia } : {}),
       },
       take: lim + 1,
       orderBy: { dataHora: "desc" },
