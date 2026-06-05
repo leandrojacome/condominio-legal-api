@@ -1,6 +1,6 @@
 // BullMQ repeatable job — marks overdue charges as em_atraso (ARD §3.7)
 import { Queue, Worker } from "bullmq";
-import { prisma } from "@/infrastructure/db/client";
+import { getPrismaWithTenant, prisma } from "@/infrastructure/db/client";
 import { notificationQueue } from "./workers/notification.worker";
 
 const REDIS_URL = process.env["REDIS_URL"] ?? "redis://localhost:6379";
@@ -64,10 +64,12 @@ export function startInadimplenciaWorker() {
         const condominioId = condominioCobrancas[0]!.condominioId;
 
         // Create in_app notification record
-        const comunicado = await prisma.$transaction(async (tx) => {
+        const tenantDb = getPrismaWithTenant(condominioId);
+        const comunicado = await tenantDb.$transaction(async (tx) => {
           const com = await tx.comunicado.create({
             data: {
               condominioId,
+              // Known limitation: until there is a system user, keep the recipient as autorId.
               autorId: vinculo.userId,
               titulo: "Cobrança(s) em atraso",
               conteudo: `Você possui ${condominioCobrancas.length} cobrança(s) vencida(s). Regularize para evitar encargos.`,
