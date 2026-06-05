@@ -27,7 +27,7 @@ export const POST = requirePerfil(
     const parsed = ConfirmarAcessoSchema.safeParse(body);
     if (!parsed.success) return validationError(parsed.error.flatten()) as unknown as Response;
 
-    const acesso = await confirmarAcesso(tenantCtx.condominioId, acessoId, parsed.data);
+    const acesso = await confirmarAcesso(tenantCtx.condominioId, tenantCtx.userId, acessoId, parsed.data);
     return NextResponse.json(acesso);
   } catch (err) {
     return handleRouteError(err) as unknown as Response;

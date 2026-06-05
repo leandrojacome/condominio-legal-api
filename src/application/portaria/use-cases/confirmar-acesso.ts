@@ -6,6 +6,7 @@ import { sendPushNotification } from "@/infrastructure/notifications/fcm";
 
 export async function confirmarAcesso(
   condominioId: string,
+  confirmadorId: string,
   acessoId: string,
   input: ConfirmarAcessoInput
 ) {
@@ -23,6 +24,17 @@ export async function confirmarAcesso(
     throw new AppError(
       "UNPROCESSABLE",
       `Acesso não pode ser confirmado: status atual é ${acesso.status}`
+    );
+  }
+
+  // Verify confirmador has an active vínculo with the destination unit
+  const vinculo = await db.vinculo.findFirst({
+    where: { userId: confirmadorId, unidadeId: acesso.unidadeDestinoId, ativo: true },
+  });
+  if (!vinculo) {
+    throw new AppError(
+      "FORBIDDEN",
+      "Usuário não possui vínculo ativo com a unidade de destino"
     );
   }
 
