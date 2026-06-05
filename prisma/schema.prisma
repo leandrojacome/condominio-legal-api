@@ -51,13 +51,13 @@ model VerificationToken {
 // ─── Core Domain ──────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(cuid())
-  name         String?
-  email        String?   @unique
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
   emailVerified DateTime?
-  image        String?
-  passwordHash String?   @db.Text
-  fcmToken     String?   // Firebase Cloud Messaging device token for push notifications
+  image         String?
+  passwordHash  String?   @db.Text
+  fcmToken      String? // Firebase Cloud Messaging device token for push notifications
 
   accounts Account[]
   sessions Session[]
@@ -69,20 +69,20 @@ model Condominio {
   nome         String
   cnpj         String   @unique
   endereco     String
-  multaAtraso  Float    @default(2.0)  // % multa inadimplência
-  jurosMensal  Float    @default(1.0)  // % juros mensais
+  multaAtraso  Float    @default(2.0) // % multa inadimplência
+  jurosMensal  Float    @default(1.0) // % juros mensais
   ativo        Boolean  @default(true)
-  criadoEm    DateTime @default(now())
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  unidades     Unidade[]
-  pessoas      Pessoa[]
-  vinculos     Vinculo[]
-  areasComuns  AreaComum[]
-  assembleias  Assembleia[]
-  comunicados  Comunicado[]
-  ocorrencias  Ocorrencia[]
-  fluxoStatus  FluxoStatus[]
+  unidades    Unidade[]
+  pessoas     Pessoa[]
+  vinculos    Vinculo[]
+  areasComuns AreaComum[]
+  assembleias Assembleia[]
+  comunicados Comunicado[]
+  ocorrencias Ocorrencia[]
+  fluxoStatus FluxoStatus[]
 }
 
 model Unidade {
@@ -91,14 +91,14 @@ model Unidade {
   bloco        String?
   numero       String
   tipo         TipoUnidade @default(APARTAMENTO)
-  fracaoIdeal  Float?      // percentual de participação (0–100)
+  fracaoIdeal  Float? // percentual de participação (0–100)
   ativo        Boolean     @default(true)
-  criadoEm    DateTime    @default(now())
-  atualizadoEm DateTime   @updatedAt
+  criadoEm     DateTime    @default(now())
+  atualizadoEm DateTime    @updatedAt
 
   condominio Condominio @relation(fields: [condominioId], references: [id])
   vinculos   Vinculo[]
-  cobranças  Cobranca[]
+  cobranças Cobranca[]
   reservas   Reserva[]
 
   @@unique([condominioId, bloco, numero])
@@ -121,7 +121,7 @@ model Pessoa {
   email        String
   telefone     String
   ativo        Boolean  @default(true)
-  criadoEm    DateTime @default(now())
+  criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
   condominio Condominio @relation(fields: [condominioId], references: [id])
@@ -152,22 +152,23 @@ enum PerfilUsuario {
 }
 
 model Vinculo {
-  id           String       @id @default(cuid())
+  id           String        @id @default(cuid())
   condominioId String
   userId       String
   pessoaId     String
   unidadeId    String
   papel        PapelVinculo
   perfil       PerfilUsuario
-  inadimplente Boolean      @default(false)
-  ativo        Boolean      @default(true)
-  criadoEm    DateTime     @default(now())
-  atualizadoEm DateTime    @updatedAt
+  inadimplente Boolean       @default(false)
+  ativo        Boolean       @default(true)
+  criadoEm     DateTime      @default(now())
+  atualizadoEm DateTime      @updatedAt
 
   condominio Condominio @relation(fields: [condominioId], references: [id])
   user       User       @relation(fields: [userId], references: [id])
   pessoa     Pessoa     @relation(fields: [pessoaId], references: [id])
   unidade    Unidade    @relation(fields: [unidadeId], references: [id])
+  cobranças Cobranca[]
 
   @@unique([condominioId, pessoaId, unidadeId, papel])
   @@index([condominioId])
@@ -197,22 +198,24 @@ enum CriterioRateio {
 }
 
 model Cobranca {
-  id            String          @id @default(cuid())
-  condominioId  String
-  unidadeId     String
-  responsavelId String?                          // userId do responsável financeiro (devedor)
-  tipo          TipoCobranca
-  valor         Float
-  competencia   String           // YYYY-MM
-  vencimento    DateTime
-  status        StatusCobranca   @default(em_aberto)
-  descricao     String?
+  id             String          @id @default(cuid())
+  condominioId   String
+  unidadeId      String
+  responsavelId  String? // userId do responsável financeiro (legado — usar devedorId)
+  devedorId      String? // FK para Vinculo (papel responsavel_financeiro)
+  tipo           TipoCobranca
+  valor          Float
+  competencia    String // YYYY-MM
+  vencimento     DateTime
+  status         StatusCobranca  @default(em_aberto)
+  descricao      String?
   criterioRateio CriterioRateio?
-  loteRateioId  String?          // groups parcelas de um rateio
-  criadoEm     DateTime         @default(now())
-  atualizadoEm DateTime         @updatedAt
+  loteRateioId   String? // groups parcelas de um rateio
+  criadoEm       DateTime        @default(now())
+  atualizadoEm   DateTime        @updatedAt
 
   unidade         Unidade           @relation(fields: [unidadeId], references: [id])
+  devedor         Vinculo?          @relation(fields: [devedorId], references: [id], onDelete: SetNull)
   emissoes        CobrancaEmissao[]
   pagamentos      Pagamento[]
   conciliacaoLogs ConciliacaoLog[]
@@ -220,6 +223,7 @@ model Cobranca {
   @@index([condominioId])
   @@index([condominioId, status])
   @@index([condominioId, unidadeId])
+  @@index([condominioId, devedorId])
 }
 
 enum MetodoEmissao {
@@ -234,13 +238,13 @@ enum StatusEmissao {
 }
 
 model CobrancaEmissao {
-  id           String        @id @default(cuid())
-  cobrancaId   String
-  metodo       MetodoEmissao
-  status       StatusEmissao @default(emitido)
-  externalId   String        @unique // nosso número / txid
-  payload      Json          // linha digitável / QR Code / copia-e-cola
-  criadoEm    DateTime      @default(now())
+  id         String        @id @default(cuid())
+  cobrancaId String
+  metodo     MetodoEmissao
+  status     StatusEmissao @default(emitido)
+  externalId String        @unique // nosso número / txid
+  payload    Json // linha digitável / QR Code / copia-e-cola
+  criadoEm   DateTime      @default(now())
 
   cobranca Cobranca @relation(fields: [cobrancaId], references: [id])
 }
@@ -252,13 +256,13 @@ enum MetodoPagamento {
 }
 
 model Pagamento {
-  id              String          @id @default(cuid())
-  cobrancaId      String
-  valor           Float
-  metodo          MetodoPagamento
-  dataPagamento   DateTime
-  externalTxId    String          @unique // idempotência per ARD §4.4
-  criadoEm       DateTime        @default(now())
+  id            String          @id @default(cuid())
+  cobrancaId    String
+  valor         Float
+  metodo        MetodoPagamento
+  dataPagamento DateTime
+  externalTxId  String          @unique // idempotência per ARD §4.4
+  criadoEm      DateTime        @default(now())
 
   cobranca Cobranca @relation(fields: [cobrancaId], references: [id])
 }
@@ -271,7 +275,7 @@ model ConciliacaoLog {
   metodo                MetodoPagamento
   valorPago             Float
   dataEvento            DateTime
-  criadoEm             DateTime        @default(now())
+  criadoEm              DateTime        @default(now())
 
   cobranca Cobranca @relation(fields: [cobrancaId], references: [id])
 
@@ -303,13 +307,13 @@ enum StatusEntrega {
 model Comunicado {
   id           String         @id @default(cuid())
   condominioId String
-  autorId      String         // userId do autor
+  autorId      String // userId do autor
   titulo       String
   conteudo     String         @db.Text
   tipo         TipoComunicado
-  criadoEm    DateTime       @default(now())
+  criadoEm     DateTime       @default(now())
 
-  condominio Condominio         @relation(fields: [condominioId], references: [id])
+  condominio Condominio          @relation(fields: [condominioId], references: [id])
   entregas   EntregaComunicado[]
 
   @@index([condominioId])
@@ -319,11 +323,11 @@ model Comunicado {
 model EntregaComunicado {
   id             String           @id @default(cuid())
   comunicadoId   String
-  destinatarioId String           // userId do destinatário
+  destinatarioId String // userId do destinatário
   canal          CanalNotificacao
   status         StatusEntrega    @default(pendente)
   dataCiencia    DateTime?
-  criadoEm      DateTime         @default(now())
+  criadoEm       DateTime         @default(now())
 
   comunicado Comunicado @relation(fields: [comunicadoId], references: [id])
 
@@ -357,19 +361,19 @@ enum StatusReserva {
 }
 
 model AreaComum {
-  id                        String           @id @default(cuid())
-  condominioId              String
-  nome                      String
-  granularidade             Granularidade
-  politicaConflito          PoliticaConflito @default(exclusiva)
-  capacidade                Int?             // para politica capacidade
-  modoAprovacao             ModoAprovacao    @default(automatica)
-  antecedenciaMinimaHoras   Int              @default(24)
-  antecedenciaMaximaDias    Int              @default(30)
-  limiteReservasPorUnidade  Int              @default(1)
-  taxaUso                   Float?
-  prazoCancelamentoHoras    Int              @default(24)
-  ativa                     Boolean          @default(true)
+  id                       String           @id @default(cuid())
+  condominioId             String
+  nome                     String
+  granularidade            Granularidade
+  politicaConflito         PoliticaConflito @default(exclusiva)
+  capacidade               Int? // para politica capacidade
+  modoAprovacao            ModoAprovacao    @default(automatica)
+  antecedenciaMinimaHoras  Int              @default(24)
+  antecedenciaMaximaDias   Int              @default(30)
+  limiteReservasPorUnidade Int              @default(1)
+  taxaUso                  Float?
+  prazoCancelamentoHoras   Int              @default(24)
+  ativa                    Boolean          @default(true)
   criadoEm                 DateTime         @default(now())
   atualizadoEm             DateTime         @updatedAt
 
@@ -380,16 +384,16 @@ model AreaComum {
 }
 
 model Reserva {
-  id          String        @id @default(cuid())
+  id           String        @id @default(cuid())
   condominioId String
-  areaComumId String
-  unidadeId   String
-  inicio      DateTime
-  fim         DateTime
-  status      StatusReserva @default(pendente)
-  cobrancaId  String?       // cobrança gerada se houver taxaUso
-  criadoEm   DateTime      @default(now())
-  atualizadoEm DateTime    @updatedAt
+  areaComumId  String
+  unidadeId    String
+  inicio       DateTime
+  fim          DateTime
+  status       StatusReserva @default(pendente)
+  cobrancaId   String? // cobrança gerada se houver taxaUso
+  criadoEm     DateTime      @default(now())
+  atualizadoEm DateTime      @updatedAt
 
   areaComum AreaComum @relation(fields: [areaComumId], references: [id])
   unidade   Unidade   @relation(fields: [unidadeId], references: [id])
@@ -426,8 +430,8 @@ model Assembleia {
   local        String?
   modalidade   String           @default("presencial") // presencial | online | hibrida
   status       StatusAssembleia @default(convocada)
-  criadoEm    DateTime         @default(now())
-  atualizadoEm DateTime        @updatedAt
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
 
   condominio  Condominio   @relation(fields: [condominioId], references: [id])
   itensPauta  ItemPauta[]
@@ -448,7 +452,7 @@ model ItemPauta {
   resultado    OpcaoVoto?
   ordem        Int
 
-  assembleia Assembleia     @relation(fields: [assembleiaId], references: [id])
+  assembleia Assembleia      @relation(fields: [assembleiaId], references: [id])
   votos      Voto[]
   auditoria  VotoAuditoria[]
 
@@ -460,10 +464,10 @@ model Voto {
   id               String    @id @default(cuid())
   itemPautaId      String
   unidadeVotanteId String
-  procuradorId     String?   // userId do procurador (se aplicável)
+  procuradorId     String? // userId do procurador (se aplicável)
   opcao            OpcaoVoto
   peso             Float     @default(1.0)
-  votadoEm        DateTime  @default(now())
+  votadoEm         DateTime  @default(now())
 
   itemPauta ItemPauta @relation(fields: [itemPautaId], references: [id])
 
@@ -478,7 +482,7 @@ model VotoAuditoria {
   unidadeVotanteId String
   opcao            OpcaoVoto
   peso             Float
-  votadoEm        DateTime  @default(now())
+  votadoEm         DateTime  @default(now())
 
   itemPauta ItemPauta @relation(fields: [itemPautaId], references: [id])
 
@@ -486,12 +490,12 @@ model VotoAuditoria {
 }
 
 model Procuracao {
-  id                   String   @id @default(cuid())
-  assembleiaId         String
+  id                    String   @id @default(cuid())
+  assembleiaId          String
   unidadeRepresentadaId String
-  procuradorId         String   // userId do procurador
-  validoAte            DateTime
-  criadoEm            DateTime @default(now())
+  procuradorId          String // userId do procurador
+  validoAte             DateTime
+  criadoEm              DateTime @default(now())
 
   assembleia Assembleia @relation(fields: [assembleiaId], references: [id])
 
@@ -502,7 +506,7 @@ model Ata {
   id           String   @id @default(cuid())
   assembleiaId String   @unique
   conteudo     String   @db.Text
-  geradaEm    DateTime @default(now())
+  geradaEm     DateTime @default(now())
 
   assembleia Assembleia @relation(fields: [assembleiaId], references: [id])
 }
@@ -512,15 +516,15 @@ model Ata {
 model FluxoStatus {
   id           String   @id @default(cuid())
   condominioId String
-  nome         String   // e.g. "aberta", "em_andamento", "resolvida"
+  nome         String // e.g. "aberta", "em_andamento", "resolvida"
   descricao    String?
   inicial      Boolean  @default(false) // status atribuído na abertura
   terminal     Boolean  @default(false) // encerra a ocorrência (dispara avaliação/SLA)
-  ordem        Int      @default(0)     // display order
-  criadoEm    DateTime @default(now())
+  ordem        Int      @default(0) // display order
+  criadoEm     DateTime @default(now())
 
-  condominio      Condominio         @relation(fields: [condominioId], references: [id])
-  transicoesOrigem FluxoTransicao[]  @relation("Origem")
+  condominio        Condominio       @relation(fields: [condominioId], references: [id])
+  transicoesOrigem  FluxoTransicao[] @relation("Origem")
   transicoesDestino FluxoTransicao[] @relation("Destino")
 
   @@unique([condominioId, nome])
@@ -557,23 +561,23 @@ enum PrioridadeOcorrencia {
 }
 
 model Ocorrencia {
-  id            String               @id @default(cuid())
+  id            String                @id @default(cuid())
   condominioId  String
   tipo          TipoOcorrencia
   titulo        String
-  descricao     String               @db.Text
-  status        String               @default("aberta") // configurável por condomínio
-  autorId       String               // userId
-  responsavelId String?              // userId do responsável
+  descricao     String                @db.Text
+  status        String                @default("aberta") // configurável por condomínio
+  autorId       String // userId
+  responsavelId String? // userId do responsável
   prioridade    PrioridadeOcorrencia?
-  slaHoras      Int?                 // null = sem prazo
-  slaEstourado  Boolean              @default(false)
-  unidadeId     String?              // opcional para ocorrências de área comum
-  criadoEm     DateTime             @default(now())
-  encerradaEm  DateTime?
-  atualizadoEm DateTime             @updatedAt
+  slaHoras      Int? // null = sem prazo
+  slaEstourado  Boolean               @default(false)
+  unidadeId     String? // opcional para ocorrências de área comum
+  criadoEm      DateTime              @default(now())
+  encerradaEm   DateTime?
+  atualizadoEm  DateTime              @updatedAt
 
-  condominio Condominio           @relation(fields: [condominioId], references: [id])
+  condominio Condominio            @relation(fields: [condominioId], references: [id])
   anexos     AnexoOcorrencia[]
   historico  OcorrenciaHistorico[]
   avaliacao  AvaliacaoOcorrencia?
@@ -583,11 +587,11 @@ model Ocorrencia {
 }
 
 model AnexoOcorrencia {
-  id          String   @id @default(cuid())
+  id           String   @id @default(cuid())
   ocorrenciaId String
-  urlArquivo  String   // URL pré-assinada / S3 key
-  nomeArquivo String?
-  criadoEm   DateTime @default(now())
+  urlArquivo   String // URL pré-assinada / S3 key
+  nomeArquivo  String?
+  criadoEm     DateTime @default(now())
 
   ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id])
 }
@@ -599,7 +603,7 @@ model OcorrenciaHistorico {
   statusNovo     String
   comentario     String?
   autorId        String
-  criadoEm      DateTime @default(now())
+  criadoEm       DateTime @default(now())
 
   ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id])
 
@@ -607,11 +611,11 @@ model OcorrenciaHistorico {
 }
 
 model AvaliacaoOcorrencia {
-  id           String   @id @default(cuid())
-  ocorrenciaId String   @unique
-  classificacao Int     // 1-5
-  comentario   String?
-  criadoEm    DateTime @default(now())
+  id            String   @id @default(cuid())
+  ocorrenciaId  String   @unique
+  classificacao Int // 1-5
+  comentario    String?
+  criadoEm      DateTime @default(now())
 
   ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id])
 }
@@ -640,12 +644,12 @@ model RegistroAcesso {
   nomeVisitante    String
   documento        String?
   unidadeDestinoId String
-  porteiroPorId    String?      // userId do porteiro
+  porteiroPorId    String? // userId do porteiro
   entrada          DateTime     @default(now())
   saida            DateTime?
   status           StatusAcesso @default(aguardando_confirmacao)
   preAutorizacaoId String?
-  criadoEm        DateTime     @default(now())
+  criadoEm         DateTime     @default(now())
 
   @@index([condominioId, criadoEm])
   @@index([condominioId, unidadeDestinoId])
@@ -656,10 +660,10 @@ model PreAutorizacao {
   condominioId    String
   unidadeId       String
   nomeVisitante   String
-  autorizadoPorId String   // userId do morador
+  autorizadoPorId String // userId do morador
   validoAte       DateTime
   utilizada       Boolean  @default(false)
-  criadoEm       DateTime @default(now())
+  criadoEm        DateTime @default(now())
 
   @@index([condominioId, unidadeId])
 }
@@ -669,11 +673,11 @@ model Encomenda {
   condominioId     String
   unidadeDestinoId String
   remetente        String?
-  fotoKey          String?   // S3/R2 object key
-  recebidaEm      DateTime  @default(now())
-  retiradaEm      DateTime?
-  retiradorId      String?   // userId de quem retirou
-  notificadoEm    DateTime?
+  fotoKey          String? // S3/R2 object key
+  recebidaEm       DateTime  @default(now())
+  retiradaEm       DateTime?
+  retiradorId      String? // userId de quem retirou
+  notificadoEm     DateTime?
 
   @@index([condominioId])
   @@index([condominioId, unidadeDestinoId])
