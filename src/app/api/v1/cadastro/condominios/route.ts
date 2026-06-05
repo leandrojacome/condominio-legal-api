@@ -26,7 +26,7 @@ export const GET = requirePerfil(
     const lim = limit ?? 20;
 
     const items = await db.condominio.findMany({
-      where: cursor ? { id: { gt: cursor } } : {},
+      where: { id: ctx.condominioId },
       take: lim + 1,
       orderBy: { criadoEm: "asc" },
     });
