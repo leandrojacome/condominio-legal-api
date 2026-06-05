@@ -197,19 +197,20 @@ enum CriterioRateio {
 }
 
 model Cobranca {
-  id           String         @id @default(cuid())
-  condominioId String
-  unidadeId    String
-  tipo         TipoCobranca
-  valor        Float
-  competencia  String          // YYYY-MM
-  vencimento   DateTime
-  status       StatusCobranca  @default(em_aberto)
-  descricao    String?
+  id            String          @id @default(cuid())
+  condominioId  String
+  unidadeId     String
+  responsavelId String?                          // userId do responsável financeiro (devedor)
+  tipo          TipoCobranca
+  valor         Float
+  competencia   String           // YYYY-MM
+  vencimento    DateTime
+  status        StatusCobranca   @default(em_aberto)
+  descricao     String?
   criterioRateio CriterioRateio?
-  loteRateioId String?         // groups parcelas de um rateio
-  criadoEm    DateTime        @default(now())
-  atualizadoEm DateTime       @updatedAt
+  loteRateioId  String?          // groups parcelas de um rateio
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
 
   unidade         Unidade           @relation(fields: [unidadeId], references: [id])
   emissoes        CobrancaEmissao[]

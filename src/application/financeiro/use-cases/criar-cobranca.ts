@@ -20,10 +20,27 @@ export async function criarCobranca(input: CriarCobrancaInput) {
     throw new AppError("NOT_FOUND", "Unidade not found in this condominio");
   }
 
+  // SPEC-3: responsável_financeiro com fallback para proprietário
+  let vinculo = await db.vinculo.findFirst({
+    where: { unidadeId: input.unidadeId, ativo: true, papel: "responsavel_financeiro" },
+  });
+  if (!vinculo) {
+    vinculo = await db.vinculo.findFirst({
+      where: { unidadeId: input.unidadeId, ativo: true, papel: "proprietario" },
+    });
+  }
+  if (!vinculo) {
+    throw new AppError(
+      "UNPROCESSABLE",
+      "Unidade has no active responsavel_financeiro or proprietario vinculo"
+    );
+  }
+
   const cobranca = await db.cobranca.create({
     data: {
       condominioId: input.condominioId,
       unidadeId: input.unidadeId,
+      responsavelId: vinculo.userId,
       tipo: input.tipo,
       valor: input.valor,
       competencia: input.competencia,
