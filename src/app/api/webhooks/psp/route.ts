@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { prisma } from "@/infrastructure/db/client";
 import { z } from "zod";
 import { internalError } from "@/lib/errors";
@@ -31,7 +32,36 @@ const PspWebhookSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as unknown;
+    const rawBody = await req.text();
+
+    // Validate HMAC-SHA256 signature from Efí Bank (blocker: unauthenticated webhook)
+    const signature = req.headers.get("x-efipay-signature");
+    const webhookSecret = process.env["WEBHOOK_SECRET"];
+
+    if (!webhookSecret) {
+      console.error("[psp-webhook] WEBHOOK_SECRET is not configured");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!signature) {
+      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
+    }
+
+    const expectedSig = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(rawBody)
+      .digest("hex");
+
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSig);
+    if (
+      signatureBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+    ) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody) as unknown;
     const parsed = PspWebhookSchema.safeParse(body);
 
     if (!parsed.success) {
