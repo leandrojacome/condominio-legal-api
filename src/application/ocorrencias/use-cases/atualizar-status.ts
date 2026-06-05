@@ -3,6 +3,7 @@ import { AppError } from "@/lib/errors";
 import type { TransicionarStatusInput } from "@/domain/ocorrencias/schemas";
 import { validarTransicao, isStatusTerminal } from "./configurar-fluxo";
 import { notificationQueue } from "@/infrastructure/queue/workers/notification.worker";
+import { prisma } from "@/infrastructure/db/client";
 
 export async function transicionarStatus(
   condominioId: string,
@@ -44,14 +45,44 @@ export async function transicionarStatus(
     });
   });
 
-  await notificationQueue.add("ocorrencia-status-changed", {
-    entregaId: ocorrenciaId,
-    comunicadoId: ocorrenciaId,
-    destinatarioId: ocorrencia.autorId,
-    canal: "in_app" as const,
-    titulo: "Ocorrência atualizada",
-    conteudo: `O status da sua ocorrência "${ocorrencia.titulo}" foi alterado para "${input.novoStatus}".`,
+  // Create proper Comunicado + EntregaComunicado so the notification worker can update
+  // the delivery status (entregaId must be a real EntregaComunicado row)
+  const titulo = "Ocorrência atualizada";
+  const conteudo = `O status da sua ocorrência "${ocorrencia.titulo}" foi alterado para "${input.novoStatus}".`;
+
+  const comunicado = await db.comunicado.create({
+    data: {
+      condominioId,
+      autorId: atualizadorId,
+      titulo,
+      conteudo,
+      tipo: "aviso_individual",
+    },
   });
+
+  const entrega = await db.entregaComunicado.create({
+    data: { comunicadoId: comunicado.id, destinatarioId: ocorrencia.autorId, canal: "in_app" },
+  });
+
+  const destinatario = await prisma.user.findUnique({
+    where: { id: ocorrencia.autorId },
+    select: { email: true, fcmToken: true },
+  });
+
+  await notificationQueue.add(
+    "ocorrencia-status-changed",
+    {
+      entregaId: entrega.id,
+      comunicadoId: comunicado.id,
+      destinatarioId: ocorrencia.autorId,
+      canal: "in_app" as const,
+      titulo,
+      conteudo,
+      destinatarioEmail: destinatario?.email ?? undefined,
+      destinatarioFcmToken: destinatario?.fcmToken ?? undefined,
+    },
+    { removeOnComplete: 100, removeOnFail: 50 }
+  );
 
   return db.ocorrencia.findFirst({ where: { id: ocorrenciaId } });
 }
