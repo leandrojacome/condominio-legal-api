@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/infrastructure/db/client";
 import { z } from "zod";
-import { internalError } from "@/lib/errors";
+import { internalError, unauthorizedError, validationError } from "@/lib/errors";
 
 // Efí Bank webhook payload shape (simplified)
 const PspWebhookSchema = z.object({
@@ -40,11 +40,11 @@ export async function POST(req: NextRequest) {
 
     if (!webhookSecret) {
       console.error("[psp-webhook] WEBHOOK_SECRET is not configured");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorizedError("Unauthorized");
     }
 
     if (!signature) {
-      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
+      return unauthorizedError("Missing signature");
     }
 
     const expectedSig = crypto
@@ -58,14 +58,14 @@ export async function POST(req: NextRequest) {
       signatureBuffer.length !== expectedBuffer.length ||
       !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
     ) {
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      return unauthorizedError("Invalid signature");
     }
 
     const body = JSON.parse(rawBody) as unknown;
     const parsed = PspWebhookSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return validationError(parsed.error.flatten());
     }
 
     const { pix, cobrancas } = parsed.data;
@@ -96,10 +96,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ received: true });
+    return Response.json({ received: true });
   } catch (err) {
     console.error("[psp-webhook]", err);
-    return internalError() as unknown as Response;
+    return internalError();
   }
 }
 

@@ -52,7 +52,17 @@ export function getPrismaWithTenant(condominioId: string) {
               args["where"] = { ...(args["where"] as object | undefined), condominioId };
             } else if (operation === "create") {
               args["data"] = { ...(args["data"] as object | undefined), condominioId };
-            } else if (operation === "update" || operation === "delete") {
+            } else if (operation === "createMany") {
+              const data = args["data"];
+              if (Array.isArray(data)) {
+                args["data"] = (data as object[]).map((item) => ({ ...item, condominioId }));
+              }
+            } else if (
+              operation === "update" ||
+              operation === "delete" ||
+              operation === "updateMany" ||
+              operation === "deleteMany"
+            ) {
               args["where"] = { ...(args["where"] as object | undefined), condominioId };
             }
           }

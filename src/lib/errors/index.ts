@@ -14,6 +14,7 @@ export const HTTP_STATUS = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   UNPROCESSABLE: 422,
+  GONE: 410,
   INTERNAL: 500,
 } as const;
 
@@ -65,6 +66,10 @@ export function conflictError(message: string): NextResponse<ApiError> {
 
 export function unprocessableError(message: string): NextResponse<ApiError> {
   return errorResponse("UNPROCESSABLE", message);
+}
+
+export function goneError(message: string): NextResponse<ApiError> {
+  return errorResponse("GONE", message);
 }
 
 export function internalError(): NextResponse<ApiError> {
