@@ -8,12 +8,14 @@ import type { MockInstance } from "vitest";
 
 // ── Mock DB client ──────────────────────────────────────────────────────────
 const mockFindMany = vi.fn();
+const mockFindFirstVinculo = vi.fn();
 const mockCreate = vi.fn();
 const mockTransaction = vi.fn();
 
 vi.mock("@/infrastructure/db/client", () => ({
   getPrismaWithTenant: vi.fn(() => ({
     unidade: { findMany: mockFindMany },
+    vinculo: { findFirst: mockFindFirstVinculo },
     cobranca: { create: mockCreate },
     $transaction: mockTransaction,
   })),
@@ -39,6 +41,13 @@ describe("ratearDespesa — criterio: igual", () => {
     );
     mockCreate.mockImplementation((args: { data: { valor: number } }) =>
       Promise.resolve({ id: "c-" + Math.random(), ...args.data })
+    );
+    mockFindFirstVinculo.mockImplementation(({ where }: { where: { unidadeId: string; papel: string } }) =>
+      Promise.resolve(
+        where.papel === "responsavel_financeiro"
+          ? { id: `vinc-${where.unidadeId}`, userId: `user-${where.unidadeId}` }
+          : null
+      )
     );
   });
 
@@ -66,6 +75,15 @@ describe("ratearDespesa — criterio: igual", () => {
     const calls = (mockCreate as MockInstance).mock.calls as Array<[{ data: { valor: number } }]>;
     const valores = calls.map((c) => c[0].data.valor);
     expect(valores).toEqual([100, 100, 100]);
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          unidadeId: "u1",
+          devedorId: "vinc-u1",
+          responsavelId: "user-u1",
+        }),
+      })
+    );
   });
 
   it("absorbs rounding remainder in the last unidade", async () => {
@@ -124,6 +142,13 @@ describe("ratearDespesa — criterio: fracao_ideal", () => {
     );
     mockCreate.mockImplementation((args: { data: { valor: number } }) =>
       Promise.resolve({ id: "c-" + Math.random(), ...args.data })
+    );
+    mockFindFirstVinculo.mockImplementation(({ where }: { where: { unidadeId: string; papel: string } }) =>
+      Promise.resolve(
+        where.papel === "responsavel_financeiro"
+          ? { id: `vinc-${where.unidadeId}`, userId: `user-${where.unidadeId}` }
+          : null
+      )
     );
   });
 

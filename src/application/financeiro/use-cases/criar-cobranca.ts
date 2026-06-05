@@ -1,6 +1,7 @@
 import { getPrismaWithTenant } from "@/infrastructure/db/client";
 import { AppError } from "@/lib/errors";
 import type { TipoCobranca } from "@prisma/client";
+import { resolverDevedorPorUnidade } from "./resolver-devedor";
 
 export interface CriarCobrancaInput {
   condominioId: string;
@@ -20,15 +21,7 @@ export async function criarCobranca(input: CriarCobrancaInput) {
     throw new AppError("NOT_FOUND", "Unidade not found in this condominio");
   }
 
-  // SPEC-3: responsável_financeiro com fallback para proprietário
-  let vinculo = await db.vinculo.findFirst({
-    where: { unidadeId: input.unidadeId, ativo: true, papel: "responsavel_financeiro" },
-  });
-  if (!vinculo) {
-    vinculo = await db.vinculo.findFirst({
-      where: { unidadeId: input.unidadeId, ativo: true, papel: "proprietario" },
-    });
-  }
+  const vinculo = await resolverDevedorPorUnidade(db, input.unidadeId);
   if (!vinculo) {
     throw new AppError(
       "UNPROCESSABLE",
@@ -41,6 +34,7 @@ export async function criarCobranca(input: CriarCobrancaInput) {
       condominioId: input.condominioId,
       unidadeId: input.unidadeId,
       responsavelId: vinculo.userId,
+      devedorId: vinculo.id,
       tipo: input.tipo,
       valor: input.valor,
       competencia: input.competencia,

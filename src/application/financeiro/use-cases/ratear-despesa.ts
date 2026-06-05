@@ -1,6 +1,7 @@
 import { getPrismaWithTenant } from "@/infrastructure/db/client";
 import { AppError } from "@/lib/errors";
 import type { CriterioRateio } from "@prisma/client";
+import { resolverDevedorPorUnidade } from "./resolver-devedor";
 
 export interface RatearDespesaInput {
   condominioId: string;
@@ -39,10 +40,12 @@ export async function ratearDespesa(input: RatearDespesaInput) {
         ? Math.round((input.valor - totalDistribuido) * 100) / 100
         : valorPorUnidade;
       totalDistribuido += valorPorUnidade;
+      const devedor = await resolverDevedorPorUnidade(db, unidade.id);
 
       cobranças.push({
         condominioId: input.condominioId,
         unidadeId: unidade.id,
+        ...(devedor ? { responsavelId: devedor.userId, devedorId: devedor.id } : {}),
         tipo: "extra_rateio" as const,
         valor,
         competencia: input.competencia,
@@ -65,9 +68,11 @@ export async function ratearDespesa(input: RatearDespesaInput) {
     for (const unidade of unidades) {
       const fracao = unidade.fracaoIdeal ?? 0;
       const valor = Math.round((input.valor * (fracao / totalFracao)) * 100) / 100;
+      const devedor = await resolverDevedorPorUnidade(db, unidade.id);
       cobranças.push({
         condominioId: input.condominioId,
         unidadeId: unidade.id,
+        ...(devedor ? { responsavelId: devedor.userId, devedorId: devedor.id } : {}),
         tipo: "extra_rateio" as const,
         valor,
         competencia: input.competencia,

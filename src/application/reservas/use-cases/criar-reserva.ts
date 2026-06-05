@@ -1,5 +1,6 @@
 import { prisma, getPrismaWithTenant } from "@/infrastructure/db/client";
 import { AppError } from "@/lib/errors";
+import { resolverDevedorPorUnidade } from "@/application/financeiro/use-cases/resolver-devedor";
 
 export interface CriarReservaInput {
   condominioId: string;
@@ -132,10 +133,12 @@ export async function criarReserva(input: CriarReservaInput) {
     // Create charge in Financeiro if confirmed and area has taxa (ARD §5)
     if (status === "confirmada" && area.taxaUso && area.taxaUso > 0) {
       const competencia = `${inicioDate.getFullYear()}-${String(inicioDate.getMonth() + 1).padStart(2, "0")}`;
+      const devedor = await resolverDevedorPorUnidade(tx, unidadeId);
       const cobranca = await tx.cobranca.create({
         data: {
           condominioId,
           unidadeId,
+          ...(devedor ? { responsavelId: devedor.userId, devedorId: devedor.id } : {}),
           tipo: "consumo",
           valor: area.taxaUso,
           competencia,

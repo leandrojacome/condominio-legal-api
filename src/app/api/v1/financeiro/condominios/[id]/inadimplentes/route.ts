@@ -20,10 +20,17 @@ export const GET = requirePerfil(
 
     const db = getPrismaWithTenant(tenantCtx.condominioId);
     const condominio = await db.condominio.findFirst({ where: { id: condominioId } });
+    const devedorId = req.nextUrl.searchParams.get("devedorId");
 
     const cobrancasAtrasadas = await db.cobranca.findMany({
-      where: { status: "em_atraso" },
-      include: { unidade: { include: { vinculos: { include: { pessoa: true } } } } },
+      where: {
+        status: "em_atraso",
+        ...(devedorId ? { devedorId } : {}),
+      },
+      include: {
+        devedor: { include: { pessoa: true } },
+        unidade: { include: { vinculos: { include: { pessoa: true } } } },
+      },
       orderBy: { vencimento: "asc" },
     });
 

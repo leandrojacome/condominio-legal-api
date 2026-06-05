@@ -25,7 +25,7 @@ export const GET = requirePerfil(
     const db = getPrismaWithTenant(tenantCtx.condominioId);
     const cobranca = await db.cobranca.findFirst({
       where: { id: cobrancaId },
-      include: { emissoes: true, pagamentos: true },
+      include: { devedor: { include: { pessoa: true } }, emissoes: true, pagamentos: true },
     });
     if (!cobranca) return notFoundError("Cobranca") as unknown as Response;
 

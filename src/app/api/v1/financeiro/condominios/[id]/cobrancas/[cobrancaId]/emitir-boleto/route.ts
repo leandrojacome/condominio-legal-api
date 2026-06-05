@@ -24,7 +24,10 @@ export const POST = requirePerfil(
     const db = getPrismaWithTenant(tenantCtx.condominioId);
     const cobranca = await db.cobranca.findFirst({
       where: { id: cobrancaId },
-      include: { unidade: { include: { vinculos: { include: { pessoa: true } } } } },
+      include: {
+        devedor: { include: { pessoa: true } },
+        unidade: { include: { vinculos: { include: { pessoa: true } } } },
+      },
     });
 
     if (!cobranca) return notFoundError("Cobranca") as unknown as Response;
@@ -32,7 +35,7 @@ export const POST = requirePerfil(
       return unprocessableError(`Cobranca already ${cobranca.status}`) as unknown as Response;
     }
 
-    const responsavel = cobranca.unidade.vinculos.find(
+    const responsavel = cobranca.devedor ?? cobranca.unidade.vinculos.find(
       (v) => v.papel === "responsavel_financeiro" && v.ativo
     ) ?? cobranca.unidade.vinculos.find((v) => v.papel === "proprietario" && v.ativo);
 

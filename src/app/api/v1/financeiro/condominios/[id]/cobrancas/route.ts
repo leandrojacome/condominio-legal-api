@@ -28,13 +28,16 @@ export const GET = requirePerfil(
 
     const status = req.nextUrl.searchParams.get("status");
     const unidadeId = req.nextUrl.searchParams.get("unidadeId");
+    const devedorId = req.nextUrl.searchParams.get("devedorId");
 
     const items = await db.cobranca.findMany({
       where: {
         ...(cursor ? { id: { gt: cursor } } : {}),
         ...(status && (Object.values(StatusCobranca) as string[]).includes(status) ? { status: status as StatusCobranca } : {}),
         ...(unidadeId ? { unidadeId } : {}),
+        ...(devedorId ? { devedorId } : {}),
       },
+      include: { devedor: { include: { pessoa: true } } },
       take: lim + 1,
       orderBy: { vencimento: "asc" },
     });

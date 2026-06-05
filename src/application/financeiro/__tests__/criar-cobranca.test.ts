@@ -42,7 +42,7 @@ beforeEach(() => {
 });
 
 describe("criarCobranca — responsavelId (SPEC-3)", () => {
-  it("uses responsavel_financeiro userId when present", async () => {
+  it("uses responsavel_financeiro vinculo as devedor and keeps legacy responsavelId", async () => {
     const financeiro = { id: "vinc-fin", userId: "user-fin", papel: "responsavel_financeiro" };
     // First call (responsavel_financeiro) returns the vinculo
     mockFindFirstVinculo.mockResolvedValueOnce(financeiro);
@@ -51,13 +51,14 @@ describe("criarCobranca — responsavelId (SPEC-3)", () => {
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ responsavelId: "user-fin" }),
+        data: expect.objectContaining({ devedorId: "vinc-fin", responsavelId: "user-fin" }),
       })
     );
+    expect(result.devedorId).toBe("vinc-fin");
     expect(result.responsavelId).toBe("user-fin");
   });
 
-  it("falls back to proprietario when no responsavel_financeiro exists", async () => {
+  it("falls back to proprietario vinculo as devedor when no responsavel_financeiro exists", async () => {
     const proprietario = { id: "vinc-prop", userId: "user-prop", papel: "proprietario" };
     // First call (responsavel_financeiro) returns null, second (proprietario) returns the vinculo
     mockFindFirstVinculo
@@ -69,9 +70,10 @@ describe("criarCobranca — responsavelId (SPEC-3)", () => {
     expect(mockFindFirstVinculo).toHaveBeenCalledTimes(2);
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ responsavelId: "user-prop" }),
+        data: expect.objectContaining({ devedorId: "vinc-prop", responsavelId: "user-prop" }),
       })
     );
+    expect(result.devedorId).toBe("vinc-prop");
     expect(result.responsavelId).toBe("user-prop");
   });
 
@@ -95,7 +97,7 @@ describe("criarCobranca — responsavelId (SPEC-3)", () => {
   });
 
   it("passes all other cobranca fields correctly", async () => {
-    mockFindFirstVinculo.mockResolvedValueOnce({ userId: "user-fin" });
+    mockFindFirstVinculo.mockResolvedValueOnce({ id: "vinc-fin", userId: "user-fin" });
 
     await criarCobranca({ ...BASE_INPUT, descricao: "Taxa junho" });
 

@@ -19,6 +19,7 @@ const {
   mockTxReservaCreate,
   mockTxReservaUpdate,
   mockTxCobrancaCreate,
+  mockTxVinculoFindFirst,
 } = vi.hoisted(() => ({
   mockTenantVinculoFindFirst: vi.fn(),
   mockTenantCobrancaFindFirst: vi.fn(),
@@ -30,6 +31,7 @@ const {
   mockTxReservaCreate: vi.fn(),
   mockTxReservaUpdate: vi.fn(),
   mockTxCobrancaCreate: vi.fn(),
+  mockTxVinculoFindFirst: vi.fn(),
 }));
 
 vi.mock("@/infrastructure/db/client", () => ({
@@ -98,10 +100,18 @@ function setupHappyPath() {
           update: mockTxReservaUpdate,
         },
         cobranca: { create: mockTxCobrancaCreate },
+        vinculo: { findFirst: mockTxVinculoFindFirst },
       })
   );
   mockTxReservaFindMany.mockResolvedValue([]);
   mockTxReservaCreate.mockResolvedValue({ id: "reserva-new", status: "confirmada", cobrancaId: null });
+  mockTxVinculoFindFirst.mockImplementation(({ where }: { where: { papel: string } }) =>
+    Promise.resolve(
+      where.papel === "responsavel_financeiro"
+        ? { id: "vinc-devedor", userId: "user-devedor" }
+        : null
+    )
+  );
 }
 
 describe("criarReserva — input validation", () => {
@@ -219,6 +229,7 @@ describe("criarReserva — conflict policy", () => {
             update: mockTxReservaUpdate,
           },
           cobranca: { create: mockTxCobrancaCreate },
+          vinculo: { findFirst: mockTxVinculoFindFirst },
         })
     );
 
@@ -244,6 +255,7 @@ describe("criarReserva — conflict policy", () => {
             update: mockTxReservaUpdate,
           },
           cobranca: { create: mockTxCobrancaCreate },
+          vinculo: { findFirst: mockTxVinculoFindFirst },
         })
     );
 
@@ -288,7 +300,12 @@ describe("criarReserva — happy path", () => {
 
     expect(mockTxCobrancaCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ valor: 150, tipo: "consumo" }),
+        data: expect.objectContaining({
+          valor: 150,
+          tipo: "consumo",
+          devedorId: "vinc-devedor",
+          responsavelId: "user-devedor",
+        }),
       })
     );
   });
