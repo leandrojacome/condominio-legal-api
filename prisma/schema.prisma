@@ -75,14 +75,43 @@ model Condominio {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  unidades    Unidade[]
-  pessoas     Pessoa[]
-  vinculos    Vinculo[]
-  areasComuns AreaComum[]
-  assembleias Assembleia[]
-  comunicados Comunicado[]
-  ocorrencias Ocorrencia[]
-  fluxoStatus FluxoStatus[]
+  unidades           Unidade[]
+  pessoas            Pessoa[]
+  vinculos           Vinculo[]
+  areasComuns        AreaComum[]
+  assembleias        Assembleia[]
+  comunicados        Comunicado[]
+  ocorrencias        Ocorrencia[]
+  fluxoStatus        FluxoStatus[]
+  idempotencyRecords IdempotencyRecord[]
+}
+
+enum IdempotencyRecordStatus {
+  pending
+  completed
+  failed
+}
+
+model IdempotencyRecord {
+  id              String                  @id @default(cuid())
+  condominioId    String
+  operationScope  String                  @db.VarChar(160)
+  idempotencyKey  String                  @db.VarChar(128)
+  requestHash     String                  @db.VarChar(128)
+  responseStatus  IdempotencyRecordStatus @default(pending)
+  statusCode      Int?
+  responseHeaders Json?
+  responseBody    Json?
+  expiresAt       DateTime
+  criadoEm        DateTime                @default(now())
+  atualizadoEm    DateTime                @default(now()) @updatedAt
+
+  condominio Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+
+  @@unique([condominioId, operationScope, idempotencyKey])
+  @@index([condominioId, expiresAt])
+  @@index([condominioId, operationScope, requestHash])
+  @@index([expiresAt])
 }
 
 model Unidade {
