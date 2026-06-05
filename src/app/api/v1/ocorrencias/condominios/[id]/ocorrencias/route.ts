@@ -8,6 +8,7 @@ import { requirePerfil } from "@/lib/auth/rbac";
 import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
 import { abrirOcorrencia } from "@/application/ocorrencias/use-cases/abrir-ocorrencia";
+import { TipoOcorrencia } from "@prisma/client";
 
 export const GET = requirePerfil(
   PerfilUsuario.SINDICO, PerfilUsuario.ADMINISTRADORA, PerfilUsuario.PROPRIETARIO,
@@ -32,7 +33,9 @@ export const GET = requirePerfil(
       where: {
         ...(cursor ? { id: { gt: cursor } } : {}),
         ...(statusFilter ? { status: statusFilter } : {}),
-        ...(tipoFilter ? { tipo: tipoFilter as never } : {}),
+        ...(tipoFilter && (Object.values(TipoOcorrencia) as string[]).includes(tipoFilter)
+          ? { tipo: tipoFilter as TipoOcorrencia }
+          : {}),
       },
       take: lim + 1,
       orderBy: { criadoEm: "desc" },

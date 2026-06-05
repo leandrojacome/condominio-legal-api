@@ -6,9 +6,14 @@ import {
   validationError, notFoundError, conflictError, unprocessableError,
   forbiddenError, handleRouteError
 } from "@/lib/errors";
-import { requirePerfil } from "@/lib/auth/rbac";
-import { PerfilUsuario } from "@/domain/cadastro/perfil";
+import { requirePerfil, PerfilUsuario } from "@/lib/auth/rbac";
 import type { RouteContext } from "@/lib/auth/rbac";
+
+const PERFIS_GESTOR: PerfilUsuario[] = [
+  PerfilUsuario.SINDICO,
+  PerfilUsuario.ADMINISTRADORA,
+  PerfilUsuario.CONSELHO,
+];
 
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO, PerfilUsuario.ADMINISTRADORA, PerfilUsuario.PROPRIETARIO,
@@ -34,6 +39,18 @@ export const POST = requirePerfil(
 
     if (!ocorrencia.encerradaEm) {
       return unprocessableError("Avaliação só permitida após encerramento") as unknown as Response;
+    }
+
+    // Only the author or a manager (SINDICO, ADMINISTRADORA, CONSELHO) can evaluate
+    if (ocorrencia.autorId !== tenantCtx.userId) {
+      const vinculo = await db.vinculo.findFirst({
+        where: { userId: tenantCtx.userId, ativo: true },
+        select: { perfil: true },
+      });
+      const isGestor = vinculo && PERFIS_GESTOR.includes(vinculo.perfil as PerfilUsuario);
+      if (!isGestor) {
+        return forbiddenError("Apenas o autor ou um gestor pode avaliar esta ocorrência") as unknown as Response;
+      }
     }
 
     try {
