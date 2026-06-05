@@ -7,6 +7,7 @@ import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
 import { paymentProvider } from "@/infrastructure/payments/efi";
 import type { PixParams } from "@/infrastructure/payments/provider";
+import { getRequiredIdempotencyKey, idempotencyHeaders, withIdempotencyRecord } from "@/lib/idempotency";
 
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO, PerfilUsuario.ADMINISTRADORA
@@ -15,6 +16,7 @@ export const POST = requirePerfil(
     const params = await ctx.params;
     const condominioId = params["id"] as string;
     const cobrancaId = params["cobrancaId"] as string;
+    const idempotencyKey = getRequiredIdempotencyKey(req);
     const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
@@ -35,40 +37,62 @@ export const POST = requirePerfil(
       return unprocessableError(`Cobranca already ${cobranca.status}`) as unknown as Response;
     }
 
-    const responsavel = cobranca.devedor ?? cobranca.unidade.vinculos.find(
-      (v) => v.papel === "responsavel_financeiro" && v.ativo
-    ) ?? cobranca.unidade.vinculos.find((v) => v.papel === "proprietario" && v.ativo);
+    return await withIdempotencyRecord({
+      condominioId,
+      operationScope: "financeiro.pix.emit",
+      idempotencyKey,
+      requestPayload: { condominioId, cobrancaId },
+    }, async () => {
+      const existing = await db.cobrancaEmissao.findFirst({
+        where: { cobrancaId, metodo: "pix", status: "emitido" },
+        orderBy: { criadoEm: "desc" },
+      });
 
-    if (!responsavel) {
-      return unprocessableError("No responsavel financeiro or proprietario found") as unknown as Response;
-    }
+      if (existing) {
+        return NextResponse.json(existing, {
+          status: 200,
+          headers: idempotencyHeaders(idempotencyKey),
+        });
+      }
 
-    const pixParams: PixParams = {
-      cobrancaId,
-      valor: cobranca.valor,
-      vencimento: cobranca.vencimento,
-      devedor: { nome: responsavel.pessoa.nome, cpf: responsavel.pessoa.cpf },
-      ...(cobranca.descricao !== null && cobranca.descricao !== undefined
-        ? { descricao: cobranca.descricao }
-        : {}),
-    };
+      const responsavel = cobranca.devedor ?? cobranca.unidade.vinculos.find(
+        (v) => v.papel === "responsavel_financeiro" && v.ativo
+      ) ?? cobranca.unidade.vinculos.find((v) => v.papel === "proprietario" && v.ativo);
 
-    const result = await paymentProvider.criarCobrancaPix(pixParams);
+      if (!responsavel) {
+        return unprocessableError("No responsavel financeiro or proprietario found") as unknown as NextResponse;
+      }
 
-    const emissao = await db.cobrancaEmissao.create({
-      data: {
+      const pixParams: PixParams = {
         cobrancaId,
-        metodo: "pix",
-        externalId: result.externalId,
-        payload: {
-          qrCode: result.qrCode,
-          qrCodeBase64: result.qrCodeBase64,
-          vencimento: result.vencimento.toISOString(),
-        },
-      },
-    });
+        valor: cobranca.valor,
+        vencimento: cobranca.vencimento,
+        devedor: { nome: responsavel.pessoa.nome, cpf: responsavel.pessoa.cpf },
+        ...(cobranca.descricao !== null && cobranca.descricao !== undefined
+          ? { descricao: cobranca.descricao }
+          : {}),
+      };
 
-    return NextResponse.json(emissao, { status: 201 });
+      const result = await paymentProvider.criarCobrancaPix(pixParams);
+
+      const emissao = await db.cobrancaEmissao.create({
+        data: {
+          cobrancaId,
+          metodo: "pix",
+          externalId: result.externalId,
+          payload: {
+            qrCode: result.qrCode,
+            qrCodeBase64: result.qrCodeBase64,
+            vencimento: result.vencimento.toISOString(),
+          },
+        },
+      });
+
+      return NextResponse.json(emissao, {
+        status: 201,
+        headers: idempotencyHeaders(idempotencyKey),
+      });
+    });
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }

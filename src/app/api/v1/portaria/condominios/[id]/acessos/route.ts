@@ -11,6 +11,7 @@ import {
   handleRouteError,
 } from "@/lib/errors";
 import type { RouteContext } from "@/lib/auth/rbac";
+import { getRequiredIdempotencyKey, idempotencyHeaders, withIdempotencyRecord } from "@/lib/idempotency";
 
 export const GET = requirePerfil(
   PerfilUsuario.SINDICO,
@@ -53,6 +54,7 @@ export const POST = requirePerfil(
 )(async (req: NextRequest, ctx: RouteContext) => {
   try {
     const { id } = await ctx.params;
+    const idempotencyKey = getRequiredIdempotencyKey(req);
     const tenantCtx = await getTenantContext(req);
 
     if (id !== tenantCtx.condominioId) {
@@ -66,8 +68,18 @@ export const POST = requirePerfil(
       return validationError(parsed.error.flatten()) as unknown as Response;
     }
 
-    const acesso = await registrarAcesso(tenantCtx.condominioId, tenantCtx.userId, parsed.data);
-    return NextResponse.json(acesso, { status: 201 });
+    return await withIdempotencyRecord({
+      condominioId: tenantCtx.condominioId,
+      operationScope: "portaria.acessos.create",
+      idempotencyKey,
+      requestPayload: { condominioId: tenantCtx.condominioId, body: parsed.data },
+    }, async () => {
+      const acesso = await registrarAcesso(tenantCtx.condominioId, tenantCtx.userId, parsed.data);
+      return NextResponse.json(acesso, {
+        status: 201,
+        headers: idempotencyHeaders(idempotencyKey),
+      });
+    });
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }

@@ -7,6 +7,7 @@ import { PerfilUsuario } from "@/domain/cadastro/perfil";
 import type { RouteContext } from "@/lib/auth/rbac";
 import { paymentProvider } from "@/infrastructure/payments/efi";
 import type { BoletoParams } from "@/infrastructure/payments/provider";
+import { getRequiredIdempotencyKey, idempotencyHeaders, withIdempotencyRecord } from "@/lib/idempotency";
 
 export const POST = requirePerfil(
   PerfilUsuario.SINDICO, PerfilUsuario.ADMINISTRADORA
@@ -15,6 +16,7 @@ export const POST = requirePerfil(
     const params = await ctx.params;
     const condominioId = params["id"] as string;
     const cobrancaId = params["cobrancaId"] as string;
+    const idempotencyKey = getRequiredIdempotencyKey(req);
     const tenantCtx = await getTenantContext(req);
 
     if (condominioId !== tenantCtx.condominioId) {
@@ -35,40 +37,62 @@ export const POST = requirePerfil(
       return unprocessableError(`Cobranca already ${cobranca.status}`) as unknown as Response;
     }
 
-    const responsavel = cobranca.devedor ?? cobranca.unidade.vinculos.find(
-      (v) => v.papel === "responsavel_financeiro" && v.ativo
-    ) ?? cobranca.unidade.vinculos.find((v) => v.papel === "proprietario" && v.ativo);
+    return await withIdempotencyRecord({
+      condominioId,
+      operationScope: "financeiro.boletos.emit",
+      idempotencyKey,
+      requestPayload: { condominioId, cobrancaId },
+    }, async () => {
+      const existing = await db.cobrancaEmissao.findFirst({
+        where: { cobrancaId, metodo: "boleto", status: "emitido" },
+        orderBy: { criadoEm: "desc" },
+      });
 
-    if (!responsavel) {
-      return unprocessableError("No responsavel financeiro or proprietario found") as unknown as Response;
-    }
+      if (existing) {
+        return NextResponse.json(existing, {
+          status: 200,
+          headers: idempotencyHeaders(idempotencyKey),
+        });
+      }
 
-    const boletoParams: BoletoParams = {
-      cobrancaId,
-      valor: cobranca.valor,
-      vencimento: cobranca.vencimento,
-      devedor: { nome: responsavel.pessoa.nome, cpfCnpj: responsavel.pessoa.cpf },
-      ...(cobranca.descricao !== null && cobranca.descricao !== undefined
-        ? { descricao: cobranca.descricao }
-        : {}),
-    };
+      const responsavel = cobranca.devedor ?? cobranca.unidade.vinculos.find(
+        (v) => v.papel === "responsavel_financeiro" && v.ativo
+      ) ?? cobranca.unidade.vinculos.find((v) => v.papel === "proprietario" && v.ativo);
 
-    const result = await paymentProvider.criarCobrancaBoleto(boletoParams);
+      if (!responsavel) {
+        return unprocessableError("No responsavel financeiro or proprietario found") as unknown as NextResponse;
+      }
 
-    const emissao = await db.cobrancaEmissao.create({
-      data: {
+      const boletoParams: BoletoParams = {
         cobrancaId,
-        metodo: "boleto",
-        externalId: result.externalId,
-        payload: {
-          linhaDigitavel: result.linhaDigitavel,
-          codigoBarras: result.codigoBarras,
-          dataVencimento: result.dataVencimento.toISOString(),
-        },
-      },
-    });
+        valor: cobranca.valor,
+        vencimento: cobranca.vencimento,
+        devedor: { nome: responsavel.pessoa.nome, cpfCnpj: responsavel.pessoa.cpf },
+        ...(cobranca.descricao !== null && cobranca.descricao !== undefined
+          ? { descricao: cobranca.descricao }
+          : {}),
+      };
 
-    return NextResponse.json(emissao, { status: 201 });
+      const result = await paymentProvider.criarCobrancaBoleto(boletoParams);
+
+      const emissao = await db.cobrancaEmissao.create({
+        data: {
+          cobrancaId,
+          metodo: "boleto",
+          externalId: result.externalId,
+          payload: {
+            linhaDigitavel: result.linhaDigitavel,
+            codigoBarras: result.codigoBarras,
+            dataVencimento: result.dataVencimento.toISOString(),
+          },
+        },
+      });
+
+      return NextResponse.json(emissao, {
+        status: 201,
+        headers: idempotencyHeaders(idempotencyKey),
+      });
+    });
   } catch (err) {
     return handleRouteError(err) as unknown as Response;
   }
